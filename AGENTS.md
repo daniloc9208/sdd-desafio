@@ -40,14 +40,21 @@ pare e peça que a spec e `DECISIONS.md` sejam atualizados primeiro.
 
 ## Stack e comandos
 
-Ainda não definidos. Atualize esta seção depois da decisão de stack registrada
-em `specs/001-motor-reembolso/plan.md`.
+- Python 3.11+; pacote em `src/reembolso`, instalado em modo editável.
+- Configurar ambiente: `python -m pip install -e ".[dev]"`
+- Executar: `reembolso calcular --input despesas.json --output resultado.json`
+- Testes: `python -m pytest`
+- Lint: `ruff check .`
+- Formatação (verificação): `ruff format --check .`
 
 ## Convenções de código
 
 - Mantenha regras de negócio no núcleo de cálculo, separadas da leitura e escrita
   de arquivos, conforme o plano técnico.
-- Defina a representação monetária no plano antes de implementar cálculos.
+- Use `decimal.Decimal` para valores monetários; não use `float` em cálculos de
+  reembolso.
+- Aplique arredondamento monetário apenas conforme definido na spec.
+- Use pytest e associe cada teste de regra ao ID RN correspondente.
 - Siga os critérios de aceite e a ordem de aplicação definidos na spec.
 
 ## Fora de escopo

@@ -40,11 +40,19 @@ explicável e verificável contra as regras documentadas.
   `<comando> calcular --input despesas.json --output resultado.json`.
 - A entrada respeita o formato exemplificado em
   `exemplos/despesas-exemplo.json`.
-- A saída é JSON e seu schema será definido na spec.
+- A saída é JSON e seu schema está definido em
+  `specs/001-motor-reembolso/spec.md`.
 - A política define limites-base para alimentação, transporte urbano e
   hospedagem, reembolso parcial acima do limite, exigência de nota fiscal,
   ampliação de limites para viagem, restrição de competência, tratamento de
   duplicatas e recusa de categorias fora da política.
+- A elegibilidade temporal compara a data da despesa com a data local do
+  cálculo: despesas futuras ou com mais de 90 dias são recusadas.
+- Valores zero e negativos são recusados por despesa; estornos pertencem a outro
+  fluxo e não afetam os totais deste produto.
+- Despesas que não possam ser avaliadas automaticamente, incluindo hospedagem
+  sem quantidade de diárias determinável, são sinalizadas para revisão manual e
+  não entram no total aprovado.
 - Testes automatizados são obrigatórios.
 - O comportamento detalhado das regras é governado por
   `specs/001-motor-reembolso/spec.md`, não por este resumo.
@@ -54,19 +62,20 @@ explicável e verificável contra as regras documentadas.
 - Um operador consegue executar o cálculo seguindo o README do produto.
 - O resultado pode ser lido como JSON e explica a decisão para cada despesa.
 - As regras desambiguadas da spec são cobertas por testes automatizados.
-- Dado o mesmo arquivo e a mesma política, o produto apresenta resultado
-  consistente, conforme contrato a definir na spec.
+- Dado o mesmo arquivo, a mesma política e a mesma data de cálculo, o produto
+  apresenta resultado consistente, conforme contrato definido na spec.
 
 ## Fora do produto nesta entrega
 
 - Execução de pagamentos ou integração bancária.
-- Fluxo de aprovação humana ou gestão de solicitações.
+- Fluxo de aprovação humana ou gestão de solicitações; o produto apenas sinaliza
+  itens que precisam de conferência manual.
 - Interface gráfica, autenticação e gestão de usuários.
 - Persistência ou integração com sistemas corporativos.
 - Interface de administração da política.
 
 ## Decisões pendentes
 
-As interpretações da política, schema de saída, tratamento de dados inválidos,
-stack e comandos de execução estão em `pendencias.MD`. Não são requisitos
-fechados até serem decididos e registrados nos documentos apropriados.
+As regras de negócio, schema de saída e validação estão definidos em
+`specs/001-motor-reembolso/spec.md`. Stack, comandos de execução e o requisito do
+envelope do Dia 2 ainda serão definidos nos documentos apropriados.
