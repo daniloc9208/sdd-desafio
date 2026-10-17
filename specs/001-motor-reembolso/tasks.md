@@ -98,7 +98,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       válidos e verifica que campos monetários são `Decimal`, não `float`.
   - **Commit:** `6b3c49e feat(T-002): define modelos internos`
 
-- [ ] **T-003** — Implementar parser e validador de entrada JSON
+- [x] **T-003** — Implementar parser e validador de entrada JSON
   - **O que faz:** lê o JSON de despesas e valida estritamente o contrato
     (campos obrigatórios, `moeda` opcional com default `BRL`, tipos, formatos
     de data, IDs únicos após remoção de espaços
@@ -133,7 +133,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_parser_valor_nao_finito` rejeita `Infinity` em `valor`.
     - `test_parser_decimal_preservado` verifica que `54.90` e `54.9` são ambos
       `Decimal` e numericamente iguais.
-  - **Commit:**
+  - **Commit:** `3609a80 test(T-003): valida contrato estrito de despesas`
 
 - [ ] **T-004** — Implementar serializador de saída JSON
   - **O que faz:** converte `CalculationResult` em texto JSON UTF-8, sem acesso
