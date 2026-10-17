@@ -394,7 +394,7 @@ executar e retomar o trabalho, siga o roadmap acima.
 
 ## Catálogo detalhado — Validação complementar e lote vazio
 
-- [ ] **T-016** — Validação de competência e período (RN-011)
+- [x] **T-016** — Validação de competência e período (RN-011)
   - **O que faz:** testa as validações de coerência entre `competencia`,
     `periodo.inicio` e `periodo.fim` definidas em RN-011.
   - **Atende:** RN-011, FURO-007, FURO-008
@@ -406,7 +406,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       `2026-07-01`, fim `2026-08-15` → aceito.
     - `test_rn011_inicio_qualquer_dia_mes` início `2026-07-15` com competência
       `2026-07` → aceito.
-  - **Commit:**
+  - **Commit:** `0b0dfcb test(T-016): cobre coerencia do periodo`
 
 - [ ] **T-017** — Lote vazio e entrada mínima
   - **O que faz:** testa lote com `despesas: []` e lote com uma única despesa
