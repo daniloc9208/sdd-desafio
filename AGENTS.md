@@ -42,7 +42,7 @@ pare e peça que a spec e `DECISIONS.md` sejam atualizados primeiro.
 
 - Python 3.11+; pacote em `src/reembolso`, instalado em modo editável.
 - Configurar ambiente: `python -m pip install -e ".[dev]"`
-- Executar: `reembolso calcular --input despesas.json --output resultado.json`
+- Executar: `reembolso calcular --input despesas.json --output resultado.json --policy politica.json --exchange-rates cambio.json`
 - Testes: `python -m pytest`
 - Lint: `ruff check .`
 - Formatação (verificação): `ruff format --check .`
@@ -51,8 +51,8 @@ pare e peça que a spec e `DECISIONS.md` sejam atualizados primeiro.
 
 - Mantenha regras de negócio no núcleo de cálculo, separadas da leitura e escrita
   de arquivos, conforme o plano técnico.
-- Use `decimal.Decimal` para valores monetários; não use `float` em cálculos de
-  reembolso.
+- Use `decimal.Decimal` para valores monetários e câmbio; não use `float` em
+  cálculos de reembolso.
 - Aplique arredondamento monetário apenas conforme definido na spec.
 - Use pytest e associe cada teste de regra ao ID RN correspondente.
 - Siga os critérios de aceite e a ordem de aplicação definidos na spec.

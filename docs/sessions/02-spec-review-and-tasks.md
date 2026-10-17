@@ -1,4 +1,4 @@
-# Sessão 01 — Revisão da spec e criação das tasks
+# Sessão 02 — Revisão da spec e criação das tasks
 
 **Data:** 2026-10-16
 **Participantes:** responsável pelo produto + agente (Axet Plugin)

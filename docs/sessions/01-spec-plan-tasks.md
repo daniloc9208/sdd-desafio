@@ -1,8 +1,8 @@
-# Sessão 02 — Spec, plano e tasks
+# Sessão 01 — Spec, plano e tasks
 
-**Data:** 2026-10-16  
+**Data:** 2026-10-15
 **Participantes:** responsável pelo produto + GitHub Copilot no VS Code  
-**Arquivo:** `docs/sessions/02-spec-plan-tasks.md`
+**Arquivo:** `docs/sessions/01-spec-plan-tasks.md`
 
 
 User: Preciso resolver o desafio deste projeto.

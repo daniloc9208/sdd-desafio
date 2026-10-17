@@ -25,7 +25,7 @@ registradas na spec e no `DECISIONS.md` antes de orientar implementação.
 - [X] **AMB-004 — Viagem:** como se identifica que o colaborador está em viagem,
   já que esse dado não aparece no JSON de exemplo? Qual o alcance temporal da
   condição de viagem?
-  Resposta: Uma despesa válida de categoria `hospedagem` no lote indica viagem. Para as demais categorias, o dia seguinte à data da hospedagem recebe o limite ampliado em 50%; despesas de outras datas no lote ficam para conferência manual. Sem hospedagem válida no lote, as despesas são tratadas como normais. Todas as despesas da viagem devem ser lançadas juntas.
+  Resposta: Uma despesa válida de categoria `hospedagem` no lote indica viagem. Para as demais categorias, o dia seguinte à data da hospedagem recebe o limite ampliado em 50%; despesas de outras datas no lote ficam para conferência manual. Sem hospedagem válida no lote, as despesas são tratadas como normais. Todas as despesas da viagem devem ser lançadas juntas. A clarificação ENV-018 determina que a categoria não precisa ter regra aplicável na política para ativar esse indício.
 - [X] **AMB-005 — Competência:** a despesa é elegível pela data da despesa, pela
   data de lançamento ou por outra data? Como `competencia`, `inicio` e `fim` se
   relacionam? As datas de início e fim são inclusivas?
@@ -52,14 +52,14 @@ registradas na spec e no `DECISIONS.md` antes de orientar implementação.
 
 ## Contratos e validação
 
-- [X] **Schema de saída:** JSON com versão, data do cálculo, moeda BRL, colaborador, período, uma decisão por despesa, status, valores e motivos; total aprovado automaticamente e total em revisão manual. Valores monetários na saída são strings com duas casas decimais.
-- [X] **Validação de entrada:** todos os campos do exemplo são obrigatórios e validados por tipo/formato; datas devem existir no calendário e `periodo.inicio <= periodo.fim`; IDs são únicos. Campo ausente, tipo/formato incorreto, JSON inválido ou ID repetido interrompe o lote sem resultado parcial. Valor zero, negativo ou data futura recusa somente a despesa correspondente.
-- [X] **Arquivo de saída e erros:** substituir arquivo existente somente após cálculo bem-sucedido. Erro de entrada/leitura/gravação retorna código diferente de zero e preserva saída anterior; resultado concluído retorna zero mesmo com recusas ou revisões manuais.
+- [X] **Schema de saída:** JSON versão `2.0`, data do cálculo, moeda BRL, colaborador, período, uma decisão por despesa, status, valores e motivos; total aprovado automaticamente e total em revisão manual. Valores BRL têm duas casas decimais; valor/moeda originais são preservados.
+- [X] **Validação de entrada:** todos os campos, exceto `moeda`, são obrigatórios e validados por tipo/formato; moeda ausente significa BRL. Datas devem existir no calendário e `periodo.inicio <= periodo.fim`; IDs são únicos. Entrada, política e câmbio inválidos interrompem o lote sem resultado parcial. Valor zero, negativo ou data futura recusa somente a despesa correspondente.
+- [X] **Arquivo de saída e erros:** substituir arquivo existente somente após cálculo bem-sucedido. Erro de despesas/configuração/leitura/gravação retorna código diferente de zero e preserva saída anterior; resultado concluído retorna zero mesmo com recusas ou revisões manuais.
 
 ## Furos identificados e resolvidos na spec
 
 Os itens abaixo foram identificados durante revisão funcional da spec v0.2. As
-respostas foram incorporadas às versões v0.3 e v0.4 e registradas em
+respostas foram incorporadas às versões v0.3 a v0.8 e registradas em
 `DECISIONS.md`.
 
 - [X] **FURO-001 — Hospedagem recusada ainda ativa indício de viagem?**
@@ -125,10 +125,10 @@ respostas foram incorporadas às versões v0.3 e v0.4 e registradas em
 
 ### Consolidação aplicada
 
-- Toda despesa de hospedagem com categoria reconhecida, data válida e valor
-  positivo gera o dia seguinte como data de viagem, mesmo se for recusada depois
-  por duplicidade, prazo ou ausência de nota. Cada data de hospedagem gera seu
-  próprio dia seguinte; datas coincidentes não acumulam aumentos acima de 50%.
+- Toda despesa estruturalmente válida de hospedagem com data válida e valor
+  positivo gera o dia seguinte como data de viagem, mesmo sem regra aplicável na
+  política ou se for recusada depois. Cada data de hospedagem gera seu próprio
+  dia seguinte; datas coincidentes não acumulam aumentos acima de 50%.
 - Cada despesa de alimentação ou transporte em uma data de viagem recebe seu
   próprio teto ampliado. Despesas elegíveis de outras datas, e hospedagens cuja
   quantidade de diárias não é conhecida, ficam em revisão manual.
@@ -138,14 +138,88 @@ respostas foram incorporadas às versões v0.3 e v0.4 e registradas em
   aplicadas. Lista vazia de despesas produz `[]` e totais `"0.00"`.
 - `periodo.inicio` deve pertencer ao mês/ano de `periodo.competencia`; `fim` pode
   ultrapassar esse mês, desde que seja igual ou posterior ao início.
-- `versao_schema` tem valor fixo `"1.0"` para este contrato.
+- `versao_schema` foi `"1.0"` no contrato v1; o envelope acrescentou campos
+  monetários e tornou `valor_informado` anulável sem cotação, então a versão
+  normativa passou a `"2.0"`.
 
 ## Execução e entrega
 
 - [X] **Linguagem:** Python, escolha confirmada em 2026-10-16.
 - [X] **Plano técnico:** Python 3.11+, pacote `src/reembolso`, entry point
-  `reembolso`, `argparse`/`json`/`decimal`, pytest, Ruff, núcleo puro e política
-  centralizada registrados em `specs/001-motor-reembolso/plan.md`.
-- [ ] Atualizar o README do produto com instalação, execução, testes e lint/format.
-- [ ] Ao receber o requisito do envelope, registrá-lo na spec, em
-  `DECISIONS.md` e em novas tasks antes de alterar a implementação.
+  `reembolso`, `argparse`/`json`/`decimal`, pytest, Ruff, núcleo puro, política
+  e câmbio carregados de arquivos externos registrados em
+  `specs/001-motor-reembolso/plan.md`.
+- [X] Atualizar o README do produto com instalação, execução, testes e lint/format.
+- [X] Requisito do envelope registrado na spec, em `DECISIONS.md` e nas tasks
+  sequenciais T-021 a T-025 antes de alterar a implementação.
+
+## Mudança de requisito — Envelope do Dia 2
+
+Decisões do responsável pelo produto em 2026-10-16. Incorporar na spec v0.7 e
+registrar em `DECISIONS.md` antes de implementar.
+
+- [X] **ENV-001 — Política padrão:** centro de custo ausente da tabela usa a
+  política padrão inteira. Centro conhecido usa o limite específico da categoria
+  quando houver; se faltar essa categoria, usa o limite padrão. Se não existir
+  em nenhum dos dois, recusar somente a despesa como categoria sem política
+  aplicável.
+- [X] **ENV-002 — Moeda ausente:** `moeda` ausente significa `BRL`; `BRL` usa
+  conversão unitária, sem consulta ao arquivo de câmbio.
+- [X] **ENV-003 — Data sem cotação exata:** utilizar a cotação de fechamento mais
+  recente disponível para a moeda em data igual ou anterior à despesa; nunca
+  utilizar cotação futura. Isso cobre fins de semana e feriados.
+- [X] **ENV-004 — Moeda sem cotação no arquivo:** recusar somente a despesa com
+  motivo `cotacao_indisponivel`; não interromper o lote.
+- [X] **ENV-005 — Moeda sem cotação no fixture:** manter o cálculo offline.
+  A cotação GBP/BRL de venda PTAX de fechamento em 2026-07-21 foi pesquisada
+  na fonte oficial (`6.79180`), mas o responsável determinou não alterar o
+  arquivo de entrada de câmbio nesta etapa. Como o fixture não contém GBP, o
+  item em GBP é recusado individualmente com `cotacao_indisponivel`.
+- [X] **ENV-006 — Conversão e nota fiscal:** converter primeiro para BRL e
+  verificar o limite de nota fiscal de R$ 100,00 sobre o equivalente em BRL.
+- [X] **ENV-007 — Precisão da conversão:** manter precisão decimal no produto
+  valor × taxa; aplicar arredondamento monetário somente aos valores finais por
+  despesa, conforme RN-009.
+- [X] **ENV-008 — Duplicidade entre moedas:** moeda e valor originais fazem parte
+  da chave de duplicidade; montantes originais distintos ou moedas distintas
+  não se tornam duplicatas por coincidirem após conversão.
+- [X] **ENV-009 — Saída e rastreabilidade:** `valor_informado` é o equivalente
+  convertido em BRL; incluir `valor_original` preservando sua precisão e
+  `moeda_original`. Sem cotação, `valor_informado` é `null`. O schema passa a
+  `"2.0"`.
+- [X] **ENV-010 — Limite zero:** qualquer regra aplicável com limite zero causa
+  recusa automática antes da revisão manual, com
+  `limite_zero_nao_reembolsavel`, mesmo sem observação.
+- [X] **ENV-011 — CLI e arquivos externos:** exigir `--policy` e
+  `--exchange-rates` em cada execução; erro estrutural em qualquer arquivo de
+  entrada/configuração interrompe o lote sem saída parcial.
+- [ ] **ENV-012 — Aprovação manual acima de R$ 500:** requisito C do envelope é
+  opcional e fica fora desta entrega.
+- [X] **ENV-013 — Vigência e retroatividade:** `data_calculo` representa a data
+  local atual em que o pedido é enviado. A política informada deve estar
+  vigente nessa data; se `data_calculo` for anterior à vigência, rejeitar a
+  configuração. Uma vez vigente no envio, aplicar a política fornecida a todas
+  as despesas do lote, mesmo que a data de ocorrência seja anterior à vigência.
+- [X] **ENV-014 — Centro de custo:** remover espaços externos e normalizar
+  maiúsculas/minúsculas ao comparar o código da entrada com a tabela de
+  centros; manter o valor original na saída.
+- [X] **ENV-015 — Moeda declarada:** validar o formato de três letras ASCII
+  maiúsculas. Se não houver cotação no arquivo, recusar o item como
+  `cotacao_indisponivel`, sem consulta externa.
+- [X] **ENV-016 — Coerência do marcador:** `observacao: "nao reembolsavel"`
+  (ignorando caixa e espaços externos) exige limite zero; com limite positivo,
+  a política é inválida.
+- [X] **ENV-017 — Rótulo de versão da política:** exigir que `versao` seja uma
+  string não vazia após remover espaços externos, mas tratá-la como metadado;
+  não rejeitar um rótulo desconhecido se o restante do arquivo satisfizer o
+  schema.
+- [X] **ENV-018 — Hospedagem sem regra aplicável:** qualquer despesa
+  estruturalmente válida com categoria `hospedagem`, data válida e valor
+  positivo ativa o dia seguinte como dia de viagem, mesmo se depois for
+  recusada por não haver regra aplicável na política.
+- [X] **ENV-019 — Valor BRL em despesa recusada:** se houver cotação utilizável,
+  preencher `valor_informado` mesmo quando a despesa for recusada por outra
+  regra. Usar `null` exclusivamente quando não houver cotação utilizável; a
+  ordem das razões de recusa não muda.
+- [X] **ENV-020 — Taxa explícita de BRL:** permitir `BRL` no arquivo de câmbio
+  somente com valor numericamente igual a 1; rejeitar qualquer outro valor.

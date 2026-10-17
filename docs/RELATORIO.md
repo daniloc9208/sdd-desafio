@@ -2,8 +2,9 @@
 
 **Aluno:** `<preencher nome>` · **Repositório:** https://github.com/daniloc9208/sdd-desafio · **Data deste rascunho:** 2026-10-16
 
-> **Status:** relatório parcial. Implementação, testes de produto e envelope do
-> Dia 2 ainda não constam nos registros consultados. Os campos marcados para o
+> **Status:** relatório parcial. O scaffold de implementação está no working
+> tree, mas o motor está incompleto e não há testes de produto executados. O
+> envelope do Dia 2 foi incorporado à spec v0.8. Os campos marcados para o
 > responsável devem ser completados antes da entrega.
 
 > Isto não é redação. São **evidências**. Toda afirmação deve vir acompanhada de
@@ -26,9 +27,9 @@
 | Decidir as ambiguidades | Responsável pelo produto | As decisões de negócio foram fornecidas pelo responsável; o agente não escolheu interpretações silenciosamente. |
 | Escrever a spec | GitHub Copilot, com revisão do responsável | O agente organizou regras e contratos; o responsável corrigiu e aprovou as interpretações. |
 | Desenhar a arquitetura | Responsável + GitHub Copilot | O responsável escolheu Python; o agente propôs arquitetura e ferramentas, aprovadas pelo responsável e registradas no plano. |
-| Implementar | Ainda não iniciada | Até 2026-10-16 não há diretórios `src/` ou `tests/` no repositório. |
+| Implementar | Scaffold parcial | Há `pyproject.toml` e módulos iniciais em `src/reembolso/`; o motor ainda não está implementado. |
 | Escrever testes | Planejamento iniciado; testes não escritos/executados | `tasks.md` descreve testes de aceite, mas eles ainda não existem como suite executável. |
-| Absorver o envelope | Pendente | Não há requisito de envelope registrado nos arquivos ou sessões disponíveis. |
+| Absorver o envelope | Especificação revisada | Requisitos e decisões do envelope estão registrados na spec v0.8, em `DECISIONS.md` e `pendencias.MD`; a implementação permanece pendente. |
 
 **Onde deleguei e me arrependi:**
 
@@ -80,8 +81,8 @@ vez no início do lote para manter o resultado reproduzível. A decisão está
 registrada em `docs/sessions/02-spec-plan-tasks.md` e em AMB-005.
 
 **Evidência da primeira versão:** commit inicial `c77c9cf`.
-**Commit da versão final:** ainda não criado; as alterações da spec v0.4 estão
-no working tree. A evolução está registrada em `DECISIONS.md` (D-001 a D-003).
+**Commit da versão final:** ainda não criado; as alterações da spec v0.8 estão
+no working tree. A evolução está registrada em `DECISIONS.md` (D-001 a D-005).
 
 ---
 
@@ -140,10 +141,11 @@ tratar estornos como crédito foi corrigida antes da implementação. O históri
 não registra custo de código/testes; não atribuir custo não observado.
 
 **Testes: quem escreveu, e como você sabe que eles testam a coisa certa?** O
-GitHub Copilot elaborou critérios e nomes de testes em `tasks.md`; não existe
-suite executável nem código de produto até esta data (`src/` e `tests/` não
-existem). O responsável revisou as tasks e pediu nova análise antes de iniciar a
-implementação. Portanto, ainda não há resultados de testes para aceitar.
+GitHub Copilot elaborou critérios e nomes de testes em `tasks.md`; ainda não
+existe suite executável em `tests/`, e os testes de produto não foram
+executados. O responsável revisou as tasks e pediu nova análise da spec antes
+de retomar a implementação. Portanto, ainda não há resultados de testes para
+aceitar.
 
 ---
 
@@ -151,18 +153,26 @@ implementação. Portanto, ainda não há resultados de testes para aceitar.
 
 *A mudança de requisito do Dia 2.*
 
-**Status:** o requisito do envelope não consta nos registros disponíveis até
-2026-10-16; preencher esta seção quando ele for recebido.
-**Quantos arquivos toquei na mão:** ainda não aplicável.
-**Quanto tempo levou:** ainda não aplicável; tempo não medido.
-**Diff de absorção:** ainda não aplicável; calcular após a mudança.
+**Status:** requisitos do envelope incorporados à spec v0.8 e às tasks T-021 a
+T-025. A revisão final registrou mais duas decisões em D-005; implementação e
+testes continuam pendentes.
+**Quantos arquivos toquei na mão:** não medido para a absorção original; nesta
+revisão documental foram atualizados spec, tasks, plano, pendências e log de
+decisões, além deste relatório.
+**Quanto tempo levou:** não medido.
+**Diff de absorção:** ainda não calculado.
 
-**Absorveu de graça:** a preencher após analisar o requisito recebido.
+**Absorveu de graça:** na especificação, política e cotações externas, moedas
+estrangeiras, conversão histórica offline e schema de saída 2.0 foram
+acomodados sem consulta de rede durante o cálculo. A implementação ainda está
+pendente.
 
-**Resistiu:** a preencher após analisar o requisito recebido.
+**Resistiu:** aprovação manual acima de R$ 500 ficou fora do escopo, conforme
+decisão registrada na spec.
 
-**Ordem em que fiz:** a preencher após a mudança. Até aqui, as decisões foram
-registradas na spec/DECISIONS e refletidas nas tasks antes de iniciar código.
+**Ordem em que fiz:** envelope analisado, decisões registradas em
+`pendencias.MD`/`DECISIONS.md`, contratos incorporados à spec e critérios
+refletidos em `tasks.md` antes de retomar a implementação.
 
 **Se eu tivesse escrito a spec original sabendo desta mudança:** a preencher.
 

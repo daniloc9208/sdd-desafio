@@ -1,6 +1,6 @@
 # Plano Técnico — Motor de Cálculo de Reembolso
 
-**Versão:** 0.1 · **Status:** proposta · **Baseado na spec:** 0.4 · **Data:** 2026-10-16
+**Versão:** 0.3 · **Status:** proposta · **Baseado na spec:** 0.8 · **Data:** 2026-10-16
 
 > Aqui mora o COMO. Este arquivo pode e deve falar de linguagem, biblioteca e
 > arquitetura. O que ele **não** pode é introduzir regra de negócio nova — se
@@ -26,37 +26,50 @@ declaradas em `pyproject.toml`.
 ## 2. Arquitetura
 
 ```
-argumentos CLI → leitura JSON estrita → validação do contrato →
-caso de uso de cálculo → serialização do resultado → gravação JSON
+argumentos CLI → leitura estrita de despesas, política e câmbio →
+validação dos três contratos → caso de uso de cálculo →
+serialização do resultado → gravação JSON
 ```
 
 **Fronteiras:** o adaptador CLI lida com argumentos, data local de referência,
-arquivos e códigos de saída. O adaptador de entrada converte JSON em dados
-validados; o adaptador de saída converte o resultado em JSON e grava o arquivo.
-O núcleo recebe dados validados, a política e `data_calculo`, aplica as regras
-da spec e retorna decisões; não lê arquivos, não consulta o relógio e não
-escreve no terminal. Isso permite testar regras sem I/O e sem depender da data
-real durante os testes.
+arquivos e códigos de saída. Adaptadores validam os JSON de despesas, política
+e cotações e os convertem em modelos internos. O núcleo recebe esses modelos e
+`data_calculo`, aplica as regras da spec e retorna decisões; não lê arquivos,
+não consulta o relógio nem a rede, e não escreve no terminal. A saída só é
+gravada após cálculo e serialização bem-sucedidos. A escrita usa um arquivo
+temporário no diretório do destino e só publica o resultado depois que ele
+estiver completo.
 
 ## 3. Modelo de dados
 
 - `InputBatch`: colaborador, período e lista ordenada de despesas validadas.
 - `Expense`: ID, data, categoria original e normalizada, descrição, fornecedor,
-  `Decimal` do valor e indicador de nota fiscal.
+  `Decimal` do valor original, moeda original e indicador de nota fiscal.
+- `Policy`: moeda-base, limites padrão, limites por centro de custo, limite de
+  nota fiscal e percentual de viagem, lidos e validados do arquivo informado.
+- `ExchangeRates`: moeda-base e taxas positivas `Decimal` agrupadas por data e
+  código de moeda; conversão determina a taxa histórica elegível sem I/O.
 - `ExpenseDecision`: ID, status da spec, valores informado/reembolsável como
-  `Decimal` e lista ordenada de motivos (código e descrição).
+  `Decimal` (valor informado anulável somente quando a cotação falta), valor e
+  moeda originais, e lista ordenada de motivos (código e descrição). Calcular
+  o valor informado sempre que houver cotação, mesmo quando a despesa for
+  recusada por outra regra.
 - `CalculationResult`: versão do schema, `data_calculo`, moeda, dados do lote,
   decisões por despesa e totais aprovados/em revisão.
 - Os modelos não fazem leitura/escrita de arquivos. A serialização converte
-  valores monetários para strings com duas casas, conforme o contrato.
+  valores BRL para strings com duas casas, preserva a precisão decimal de
+  `valor_original` e emite schema `2.0`.
 
-## 4. Como a política é representada
+## 4. Como política e câmbio são representados
 
-Os limites e as categorias reconhecidas ficam centralizados num objeto de
-política imutável no núcleo (`policy.py`). A política não é configurável pelo
-usuário nem lida de arquivo nesta entrega. Alterar a política exige mudança
-revisada na spec, registro em `DECISIONS.md`, atualização dos testes e depois do
-objeto de política.
+O adaptador de configuração valida e converte `politica-v4.json` para um
+`Policy` imutável; os limites e categorias não ficam embutidos no código. O
+rótulo `versao` é metadado; o schema validado define a interpretação. O CLI
+exige `--policy` e `--exchange-rates`. Cotações também são carregadas para um
+modelo imutável; o núcleo escolhe a data mais recente que não ultrapasse a data
+da despesa e calcula com `Decimal`. BRL usa taxa unitária; se listada no arquivo,
+deve ser numericamente igual a 1. Não há consulta à rede durante execução.
+Alterações de formato exigem atualizar o contrato, a validação e os testes.
 
 ## 5. Decisões técnicas
 
@@ -82,14 +95,16 @@ representação binária já pode ter perdido precisão.
 **Consequência:** comparações com limites e duplicatas preservam o número
 decimal original; saída monetária é formatada somente no adaptador de saída.
 
-### DT-003 — Política centralizada e fixa
+### DT-003 — Política externa validada
 
-**Contexto:** há uma única política e nenhuma interface para configurá-la.
-**Decisão:** guardar limites/categorias num objeto imutável central no núcleo.
-**Alternativa descartada:** arquivo de configuração externo, que exigiria
-contrato, parsing e validações adicionais sem requisito de produto.
-**Consequência:** alterações de limite são explícitas e testáveis, mas exigem
-alteração de código após atualizar spec e decisões.
+**Contexto:** os limites variam por centro de custo e são mantidos pelo
+financeiro fora do código.
+**Decisão:** ler política por arquivo CLI, validar seu contrato e materializar
+um objeto imutável usado pelo cálculo.
+**Alternativa descartada:** manter limites no núcleo, pois impediria atualizações
+operacionais e contradiz a Política v4.
+**Consequência:** arquivos inválidos falham antes de gravar; o mesmo núcleo pode
+ser testado com diferentes tabelas, sem alteração de implementação.
 
 ### DT-004 — Empacotamento e ferramentas de desenvolvimento
 
@@ -102,16 +117,53 @@ por tornar o comando mais frágil no README e nos testes.
 **Consequência:** requer instalação editável do projeto no ambiente virtual; o
 comando da CLI fica igual ao contrato e à documentação.
 
+### DT-005 — Conversão histórica offline
+
+**Contexto:** a conversão deve ser reproduzível e não pode usar cotação atual
+nem depender de serviço remoto durante o cálculo.
+**Decisão:** carregar cotações do arquivo passado à CLI e fazer busca pela data
+elegível no núcleo; aritmética com `Decimal`.
+**Alternativa descartada:** consultar API em tempo de execução, por introduzir
+indisponibilidade de rede e resultados não determinísticos.
+**Consequência:** o arquivo deve conter as taxas históricas necessárias; falta
+de taxa para um item é resultado de negócio definido pela spec.
+
+### DT-006 — Saída atômica e caminhos distintos
+
+**Contexto:** uma falha de validação ou escrita não pode deixar resultado
+parcial nem destruir uma saída anterior, e os quatro arquivos da execução
+precisam ser distintos mesmo quando seus caminhos usam aliases.
+**Decisão:** antes de ler ou gravar, resolver os quatro caminhos com
+`Path.resolve(strict=False)` e compará-los com normalização específica do
+sistema (`os.path.normcase`). Para caminhos que já existem, usar também
+`os.path.samefile` para identificar aliases que apontem ao mesmo arquivo.
+Escrever a saída completa em arquivo temporário exclusivo no mesmo diretório
+do destino; depois de fechar o arquivo com sucesso, publicá-lo com
+`os.replace`. Se qualquer etapa falhar, remover o temporário quando possível,
+propagar um erro explícito e deixar a saída anterior intacta.
+**Alternativa descartada:** gravar diretamente no destino ou usar temporário em
+outro volume, pois a primeira opção expõe conteúdo parcial e a segunda não
+permite contar com substituição atômica.
+**Consequência:** a publicação é uma operação final e atômica no mesmo volume;
+falhas durante a preparação ou substituição são reportadas e cobertas por
+testes. A comparação de caminhos existentes também detecta hard links; para
+caminhos ainda inexistentes, a comparação usa seus caminhos resolvidos e
+normalizados.
+
 ## 6. Estratégia de testes
 
 - **Nível:** maioria unitária para regras puras; integração da CLI para leitura,
   validação, escrita, códigos de saída e preservação de arquivos em erro.
+- **Arquivos:** testar caminhos iguais por grafias diferentes, aliases
+  existentes e erro durante a substituição; confirmar que saída preexistente
+  permanece intacta e que temporários não são deixados após falhas recuperáveis.
 - **Cobertura por requisito:** cada RN e cada caso da seção 7 da spec deve
   referenciar ao menos um teste na matriz de `tasks.md`.
 - **Casos de borda:** parametrizar fronteiras de nota, prazo, arredondamento,
-  duplicidade e limites; testar viagens com uma e várias hospedagens; testar
-  lote vazio, JSON inválido, chaves desconhecidas e mesmo arquivo como entrada
-  e saída.
+  duplicidade e limites; testar política específica/fallback, política zero,
+  moeda BRL/estrangeira, cotação exata/anterior/ausente, valor informado em
+  despesa recusada, taxa BRL explícita válida/inválida, viagens com uma e várias
+  hospedagens, lote vazio, arquivos JSON inválidos e colisões de caminhos.
 - **Relógio:** o núcleo recebe `data_calculo`; testes passam datas fixas e nunca
   dependem implicitamente do dia em que rodam.
 - **Nomenclatura:** incluir ID da regra no nome, por exemplo
@@ -126,5 +178,7 @@ comando da CLI fica igual ao contrato e à documentação.
 | Divergência entre spec e política implementada | Média | Cobrir cada RN com teste nomeado e revisar o diff contra a spec antes de concluir a task |
 | Data local torna elegibilidade variável | Média | Capturar `data_calculo` uma vez no início do CLI e injetar data fixa nos testes |
 | Precisão monetária ou parsing introduz float | Média | Validar o parsing de decimais e testar limites/subcentavos usando `Decimal` |
+| Configuração inválida altera o cálculo | Média | Validar política e taxas integralmente antes do início do cálculo e da gravação |
+| Arquivo de câmbio não contém data/moeda necessária | Média | Usar apenas cotação histórica permitida pela spec; reportar recusa individual sem inventar taxa |
 | Viagem não é inferível para todas as datas | Alta | Aplicar somente as datas autorizadas pela RN-004; usar revisão manual nos demais casos, sem presumir contexto |
 | Escrita falha ou tenta sobrescrever a entrada | Baixa | Rejeitar caminhos de mesmo arquivo e gravar saída somente após cálculo bem-sucedido; testar preservação da saída em erro |

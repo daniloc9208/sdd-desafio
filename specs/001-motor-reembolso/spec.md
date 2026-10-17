@@ -1,6 +1,6 @@
 # Spec — Motor de Cálculo de Reembolso
 
-**Versão:** 0.4 · **Status:** rascunho para validação · **Última alteração:** 2026-10-16
+**Versão:** 0.8 · **Status:** decisões do envelope validadas; pronta para implementação · **Última alteração:** 2026-10-16
 
 > **Regra de ouro deste arquivo:** ele descreve o QUÊ e o PORQUÊ. Nenhuma linha
 > aqui pode citar linguagem, biblioteca, classe, função ou estrutura de pasta.
@@ -28,17 +28,25 @@ cada decisão registrados em uma saída estruturada.
 - Não executa pagamentos nem integra com sistemas bancários.
 - Não substitui o processo de aprovação ou revisão do financeiro.
 - Não oferece interface gráfica, autenticação ou gestão de usuários.
-- Não permite editar a política por uma interface; a política aplicável é a
-	descrita nesta spec.
+- Não oferece interface de administração da política; a política e as taxas são
+  fornecidas em arquivos externos para cada cálculo.
 - Não calcula nem compensa estornos; valores negativos são recusados neste fluxo.
 - Não determina automaticamente a quantidade de diárias de hospedagem nem
   conclui despesas que dependam de conferência manual.
 
 ## 4. Entrada e saída
 
-**Entrada:** JSON no formato demonstrado em `exemplos/despesas-exemplo.json`.
-Todos os campos presentes nesse formato são obrigatórios e devem ter os tipos e
-formatos abaixo.
+**Entrada:** arquivo de despesas JSON no formato demonstrado em
+`exemplos/despesas-exemplo.json`, acompanhado de um arquivo de política e um
+arquivo de cotações. Os caminhos dos quatro arquivos são fornecidos à CLI. Todos
+os campos da entrada de despesas, exceto `despesas[].moeda`, são obrigatórios e
+devem ter os tipos e formatos abaixo.
+
+O objeto raiz de despesas deve conter exatamente `colaborador`, `periodo` e
+`despesas`. `colaborador` deve conter exatamente `id`, `nome` e `centro_custo`;
+`periodo`, exatamente `competencia`, `inicio` e `fim`. Cada item de `despesas`
+deve conter exatamente os campos de despesa definidos na tabela, exceto
+`moeda`, que é opcional.
 
 | Campo | Tipo | Significado | Obrigatório |
 |---|---|---|---|
@@ -54,19 +62,67 @@ formatos abaixo.
 | `despesas[].categoria` | string não vazia após remover espaços externos | Categoria declarada | Sim |
 | `despesas[].descricao` | string não vazia após remover espaços externos | Descrição declarada | Sim |
 | `despesas[].fornecedor` | string não vazia após remover espaços externos | Fornecedor declarado | Sim |
-| `despesas[].valor` | número decimal finito | Valor em reais; pode ter mais de duas casas e, após arredondamento monetário, deve resultar em pelo menos R$ 0,01 para ser reembolsável | Sim |
+| `despesas[].valor` | número decimal finito | Valor na moeda informada; pode ter mais de duas casas | Sim |
+| `despesas[].moeda` | string com exatamente três letras ASCII maiúsculas | Moeda do valor; lista ISO 4217 não é consultada; quando ausente, assume `BRL` | Não |
 | `despesas[].tem_nota_fiscal` | booleano | Indica se foi informada nota fiscal | Sim |
 
 O documento, `colaborador`, `periodo` e cada item de `despesas` devem conter
 somente os campos definidos nesta tabela. Propriedade adicional em qualquer
 um desses níveis é erro estrutural e interrompe o lote.
 
+O objeto raiz da política deve conter exatamente `versao`, `vigencia`,
+`moeda_base`, `padrao`, `centros_custo`,
+`nota_fiscal_obrigatoria_acima_de` e `acrescimo_em_viagem_percentual`.
+`versao` é uma string não vazia após remover espaços externos, usada como
+metadado; qualquer valor é aceito
+quando o restante do arquivo satisfaz este schema. `vigencia` é data válida
+`AAAA-MM-DD`;
+`moeda_base` é `BRL`; `nota_fiscal_obrigatoria_acima_de`, cada `limite` e
+`acrescimo_em_viagem_percentual` são números decimais finitos não negativos.
+`padrao` e `centros_custo` são objetos de
+categoria para regra. Cada regra contém exatamente `limite`,
+`periodicidade` e, opcionalmente, `observacao`; `periodicidade` é `dia` ou
+`diaria`, e `observacao`, quando presente, é string não vazia após remover
+espaços externos. Chaves de categoria e de centro de custo devem ser strings
+não vazias após remover espaços externos. Chaves de categoria são normalizadas
+como categoria de despesa; chaves de centro, como centro de custo; colisões
+após normalização invalidam a política. O marcador
+`nao reembolsavel`, sem diferenciar caixa e removendo espaços externos, só é
+válido junto de limite zero. Limite zero causa recusa conforme RN-012,
+independentemente de haver observação.
+
+O objeto raiz do arquivo de câmbio deve conter exatamente `moeda_base`, `taxas`
+e, opcionalmente, `fonte` e `observacao`; a moeda-base é `BRL` e metadados
+opcionais são strings não vazias após remover espaços externos. `taxas` é um
+objeto indexado por datas válidas `AAAA-MM-DD`. Cada valor é um objeto que
+mapeia códigos de três letras ASCII
+maiúsculas a números decimais finitos positivos. Cada taxa expressa BRL por uma
+unidade da moeda cotada. `BRL` tem taxa unitária implícita; se aparecer no
+arquivo, seu valor deve ser numericamente igual a 1. O formato do código da
+moeda é validado, mas sua presença na lista oficial ISO 4217 não é consultada:
+moeda estrangeira sem taxa elegível é tratada por RN-013 como recusa individual.
+
+Arquivos de despesas, política ou câmbio inválidos, incompletos, com tipos
+incorretos, chaves extras ou chaves repetidas são erros estruturais e
+interrompem o lote.
+Os caminhos de despesas, política, câmbio e saída devem identificar quatro
+arquivos distintos; dois caminhos que identifiquem o mesmo arquivo são inválidos.
+
 **Saída:** JSON UTF-8 gravado no caminho indicado. Valores monetários são
-representados como strings decimais com duas casas e moeda `BRL`.
+representados como strings decimais BRL com duas casas, exceto `valor_original`,
+que preserva a precisão decimal de entrada.
+
+O objeto raiz da saída contém exatamente `versao_schema`, `data_calculo`,
+`moeda`, `colaborador`, `periodo`, `despesas` e `totais`. `totais` contém
+exatamente `valor_reembolsavel` e `valor_em_revisao`. Cada resultado de
+despesa contém exatamente os campos `id`, `status`, `valor_informado`,
+`valor_original`, `moeda_original`, `valor_reembolsavel` e `motivos`; cada item
+de `motivos` contém exatamente `codigo` e `descricao`. `colaborador` e
+`periodo` preservam os objetos da entrada.
 
 | Campo | Tipo | Significado |
 |---|---|---|
-| `versao_schema` | string | Sempre `1.0` para este contrato |
+| `versao_schema` | string | Sempre `2.0` para este contrato |
 | `data_calculo` | data `AAAA-MM-DD` | Data local capturada no início da execução; referência única da regra de 90 dias para todo o lote |
 | `moeda` | string | Sempre `BRL` |
 | `colaborador` | objeto | Identificação do colaborador recebida na entrada |
@@ -74,7 +130,9 @@ representados como strings decimais com duas casas e moeda `BRL`.
 | `despesas` | lista | Um resultado por despesa, preservando a ordem de entrada |
 | `despesas[].id` | string | Identificador original da despesa |
 | `despesas[].status` | string | `reembolsada`, `reembolsada_parcialmente`, `recusada` ou `revisao_manual`; revisão não é aprovação |
-| `despesas[].valor_informado` | string decimal | Valor original da despesa em BRL, com duas casas após arredondamento |
+| `despesas[].valor_informado` | string decimal ou `null` | Valor original convertido para BRL, com duas casas, sempre que houver cotação utilizável, mesmo que a despesa seja recusada por outra regra; `null` somente quando não houver cotação utilizável |
+| `despesas[].valor_original` | string decimal | Valor original da entrada, preservando sua precisão decimal |
+| `despesas[].moeda_original` | string | Moeda informada ou `BRL` quando ausente |
 | `despesas[].valor_reembolsavel` | string decimal | Valor aprovado automaticamente; zero para despesa recusada ou em revisão manual |
 | `despesas[].motivos` | lista de objetos | Códigos estáveis e descrições legíveis que explicam o status e os ajustes |
 | `despesas[].motivos[].codigo` | string | Código estável do motivo |
@@ -96,7 +154,8 @@ continuar avaliando as demais despesas do lote. Códigos possíveis em
 `motivos[].codigo`:
 `valor_zero_invalido`, `valor_negativo_fora_escopo`, `valor_inferior_ao_centavo`, `data_futura`,
 `categoria_fora_politica`, `duplicata`, `prazo_excedido`,
-`nota_fiscal_ausente`, `revisao_manual_viagem`, `limite_aplicado`,
+`nota_fiscal_ausente`, `cotacao_indisponivel`,
+`limite_zero_nao_reembolsavel`, `revisao_manual_viagem`, `limite_aplicado`,
 `limite_viagem_aplicado` e `dentro_do_limite`. Para qualquer revisão manual,
 usar o único código `revisao_manual_viagem`; a descrição deve dizer se a causa é
 diária de hospedagem indeterminável ou data não identificável como dia de viagem.
@@ -111,7 +170,7 @@ Exemplo reduzido para um cálculo de referência em 2026-10-16:
 
 ```json
 {
-	"versao_schema": "1.0",
+	"versao_schema": "2.0",
 	"data_calculo": "2026-10-16",
 	"moeda": "BRL",
 	"colaborador": { "id": "c-0417", "nome": "Marina Volpi", "centro_custo": "CC-ENG-PLATAFORMA" },
@@ -120,14 +179,16 @@ Exemplo reduzido para um cálculo de referência em 2026-10-16:
 		{
 			"id": "d-014",
 			"status": "reembolsada_parcialmente",
-			"valor_informado": "61.00",
-			"valor_reembolsavel": "60.00",
+			"valor_informado": "81.00",
+			"valor_original": "81.00",
+			"moeda_original": "BRL",
+			"valor_reembolsavel": "75.00",
 			"motivos": [
-				{ "codigo": "limite_aplicado", "descricao": "Valor limitado ao teto aplicável." }
+				{ "codigo": "limite_aplicado", "descricao": "Valor limitado ao teto de R$ 75,00 do centro de custo." }
 			]
 		}
 	],
-	"totais": { "valor_reembolsavel": "60.00", "valor_em_revisao": "0.00" }
+	"totais": { "valor_reembolsavel": "75.00", "valor_em_revisao": "0.00" }
 }
 ```
 
@@ -137,44 +198,50 @@ Cada regra recebe um ID (`RN-001`, ...). As tasks vão referenciar esses IDs.
 
 ### RN-001 — Limites por despesa
 
-**Regra:** cada colaborador tem limite de R$ 60 por despesa de alimentação
-(refeição) e R$ 80 por despesa de transporte urbano (trecho). Não há soma
-diária nem cota compartilhada entre despesas ou colaboradores.
-**Origem:** política do RH, itens 1–2; decisão AMB-001.
-**Aceite:** alimentação de R$ 72,50 pode reembolsar até R$ 60,00; transporte de
-R$ 100,00 pode reembolsar até R$ 80,00, antes de eventual ampliação por viagem.
+**Regra:** selecionar o limite aplicável pela RN-012. O limite é individual por
+despesa (refeição, trecho ou unidade definida pela categoria), sem soma diária
+nem cota compartilhada. Os limites da política são em BRL.
+**Origem:** comunicado do RH, política v4; decisões AMB-001 e ENV-001.
+**Aceite:** alimentação do `CC-COMERCIAL` pode reembolsar até R$ 90,00 por
+despesa; transporte do `CC-ADM` pode reembolsar até R$ 60,00, antes de eventual
+ampliação por viagem.
 
 ### RN-002 — Reembolso limitado ao teto
 
 **Regra:** para despesa elegível acima do limite aplicável, reembolsar o menor
 entre o valor informado e o teto; o excedente não é reembolsado.
 **Origem:** política do RH, item 4; decisão AMB-002.
-**Aceite:** alimentação de R$ 72,50 com teto de R$ 60,00 resulta em R$ 60,00.
+**Aceite:** alimentação de R$ 90,00 no `CC-ENG-PLATAFORMA`, com teto de
+R$ 75,00 na política v4, resulta em R$ 75,00.
 
 ### RN-003 — Nota fiscal
 
-**Regra:** despesa com valor original maior ou igual a R$ 100,00 exige nota
-fiscal. Sem nota, a despesa é recusada integralmente, mesmo que o limite
-reembolsável fosse inferior a R$ 100,00.
-**Origem:** política do RH, item 5; decisão AMB-003.
-**Aceite:** R$ 100,00 sem nota é recusado; R$ 99,99 sem nota não é recusado por
-esta regra.
+**Regra:** despesa cujo equivalente em BRL, antes do arredondamento de
+apresentação, seja maior ou igual ao limite configurado no arquivo de política
+exige nota fiscal. Sem nota, a despesa é recusada integralmente.
+**Origem:** comunicado do RH, política v4; decisões AMB-003 e ENV-006.
+**Aceite:** valor convertido de R$ 100,00 sem nota é recusado; R$ 99,99 sem nota
+não é recusado por esta regra.
 
 ### RN-004 — Identificação e limites de viagem
 
 **Regra:** cada despesa de categoria normalizada `hospedagem`, com data válida e
-valor positivo, gera como data de viagem o dia calendário seguinte. Esse indício
-permanece válido mesmo que a hospedagem seja depois recusada por duplicidade,
-prazo ou falta de nota fiscal. Despesas elegíveis de outras categorias cuja data
-coincida com pelo menos uma dessas datas recebem limite aumentado em 50%; o
+valor positivo, gera como data de viagem o dia calendário seguinte, mesmo que a
+categoria não tenha regra aplicável na política. Esse indício permanece válido
+mesmo que a hospedagem seja depois recusada por categoria, duplicidade, prazo,
+cotação indisponível ou falta de nota fiscal. Despesas elegíveis de outras
+categorias cuja data coincida com pelo menos uma dessas datas recebem limite aumentado em 50%; o
 aumento é aplicado uma única vez, ainda que mais de uma hospedagem gere a mesma
 data. Cada despesa tem seu próprio teto ampliado, sem soma diária. Se o lote
 contiver hospedagem e uma despesa elegível não estiver em nenhuma data de viagem
 identificada, ela fica em `revisao_manual`, sem receber limite normal nem
 ampliado. A própria hospedagem fica em `revisao_manual`, pois a entrada não
-permite determinar as diárias. Sem nenhuma hospedagem com data válida e valor
-positivo, não há inferência de viagem nem revisão manual por esse motivo.
-**Origem:** política do RH, item 6; decisões AMB-004 e AMB-008.
+permite determinar as diárias, exceto quando a política explicitamente a marcar
+como não reembolsável; nesse caso, a recusa automática prevalece. Sem nenhuma
+hospedagem com data válida e valor original positivo, não há inferência de
+viagem nem revisão manual por esse motivo.
+**Origem:** política do RH e política v4; decisões AMB-004, AMB-008, AMB-021,
+ENV-010 e ENV-018.
 **Aceite:** hospedagens em 2026-07-14 e 2026-07-22 geram dias de viagem
 2026-07-15 e 2026-07-23. Em cada dia, cada despesa de alimentação recebe teto
 de R$ 90,00 e cada transporte recebe teto de R$ 120,00. Despesas elegíveis em
@@ -195,36 +262,37 @@ campos de período identificam o lote; não substituem esta verificação.
 ### RN-006 — Duplicatas
 
 **Regra:** duas despesas com categoria normalizada, data, valor decimal
-numericamente igual antes de arredondar, descrição e fornecedor iguais são
-duplicatas. Portanto, `54.90` e `54.9` são valores iguais, mas `33.331` e
-`33.334` são diferentes, mesmo que possam ser exibidos com os mesmos centavos.
-Para descrição e fornecedor, comparar o texto exatamente como recebido.
+numericamente igual antes de arredondar, moeda original, descrição e fornecedor
+iguais são duplicatas. Para descrição e fornecedor, comparar o texto exatamente
+como recebido. Valores `54.90` e `54.9` na mesma moeda são iguais; moedas
+diferentes ou valores originais diferentes não são duplicatas mesmo se seus
+equivalentes em BRL coincidirem.
 Manter a primeira na ordem do arquivo e recusar as seguintes. O formato atual
 não tem anexo, portanto anexo não participa da comparação.
-**Origem:** política do RH, item 8; decisão AMB-006 e contrato atual de entrada.
-**Aceite:** entre d-006 e d-007, manter d-006 e recusar d-007 como duplicata.
-Valores JSON numericamente iguais, como `54.90` e `54.9`, contam como iguais;
-valores distintos antes do arredondamento, como `33.331` e `33.334`, não são
-duplicatas apenas por serem apresentados com os mesmos centavos.
+**Origem:** política do RH, item 8; decisões AMB-006 e ENV-008.
+**Aceite:** entre dois itens com os mesmos campos-chave e `54.90`/`54.9` na
+mesma moeda, manter o primeiro e recusar o segundo. Um valor `10 EUR` não é
+duplicata de `10 USD`, ainda que a conversão produza o mesmo valor em BRL.
 
 ### RN-007 — Categorias
 
 **Regra:** comparar categoria após remover espaços externos e converter para
-minúsculas. As categorias reconhecidas são `alimentacao`, `transporte_urbano` e
-`hospedagem`. Categoria não reconhecida é recusada com motivo
-`categoria_fora_politica`.
-**Origem:** política do RH, item 9; decisão AMB-007.
-**Aceite:** `ALIMENTACAO` é reconhecida como `alimentacao`; `coworking` é
+minúsculas. Uma categoria é aplicável se existir na política específica do
+centro de custo ou na política padrão. Se não existir em nenhuma dessas tabelas,
+a despesa é recusada com motivo `categoria_fora_politica`.
+**Origem:** comunicado do RH, política v4; decisões AMB-007 e ENV-001.
+**Aceite:** `ALIMENTACAO` é reconhecida como `alimentacao`; `representacao` é
+aplicável ao `CC-COMERCIAL`; categoria sem regra no centro nem no padrão é
 recusada.
 
 ### RN-008 — Valores positivos e estornos fora de escopo
 
-**Regra:** valor zero é inválido, valor negativo é recusado como não elegível
-neste fluxo e valor positivo que, arredondado para duas casas, resulte em
-R$ 0,00 é recusado por ser inferior a um centavo reembolsável. Estornos devem
-ser tratados em fluxo separado; não reduzem nem aumentam o total deste cálculo.
-A invalidez afeta apenas a despesa, permitindo avaliar as demais despesas
-válidas do lote.
+**Regra:** valor original zero é inválido e valor original negativo é recusado
+neste fluxo. Para BRL, ou após conversão de moeda estrangeira, valor positivo
+que arredondado para duas casas resulte em R$ 0,00 é recusado por ser inferior
+a um centavo reembolsável. Estornos devem ser tratados em fluxo separado; não
+reduzem nem aumentam o total deste cálculo. A invalidez afeta apenas a despesa,
+permitindo avaliar as demais despesas válidas do lote.
 **Origem:** decisões AMB-009 e contrato validado pelo responsável do produto.
 **Aceite:** d-009, de R$ -45,00, é recusada com `valor_negativo_fora_escopo`; um
 valor zero é recusado com `valor_zero_invalido`; R$ 0,004 é recusado com
@@ -233,22 +301,25 @@ R$ 0,005 arredonda para R$ 0,01 e não é recusado por ser inferior a um centavo
 
 ### RN-009 — Precisão monetária
 
-**Regra:** manter precisão decimal durante os cálculos e arredondar cada valor
-monetário apresentado por despesa para duas casas: terceiro algarismo decimal de
-0 a 4 arredonda para baixo; de 5 a 9, para cima. Os totais são a soma dos valores
+**Regra:** manter precisão decimal durante conversão e cálculos; arredondar cada
+valor monetário em BRL apresentado por despesa para duas casas: terceiro
+algarismo decimal de 0 a 4 arredonda para baixo; de 5 a 9, para cima. O valor
+original é preservado com sua precisão decimal. Os totais são a soma dos valores
 por despesa já arredondados, inclusive o total em revisão manual.
-**Origem:** decisão AMB-010 e contrato validado pelo responsável do produto.
+**Origem:** decisões AMB-010 e ENV-007 e contrato validado pelo responsável.
 **Aceite:** R$ 33,333 resulta em R$ 33,33; R$ 33,335 resulta em R$ 33,34. Os
 totais conferem com a soma dos valores por despesa exibidos.
 
 ### RN-010 — Interface de cálculo
 
 **Regra:** a aplicação recebe um arquivo JSON por meio do comando
-`<comando> calcular --input despesas.json --output resultado.json` e grava um
-resultado JSON no caminho indicado.
-**Origem:** interface fixa do desafio.
-**Aceite:** a execução com os caminhos de entrada e saída informados produz um
-arquivo JSON válido segundo o contrato desta seção.
+`reembolso calcular --input despesas.json --output resultado.json --policy politica.json --exchange-rates cambio.json`
+e grava um resultado JSON no caminho indicado. Os quatro caminhos são
+obrigatórios. Erro de leitura ou validação de qualquer entrada/configuração
+interrompe o lote sem resultado parcial; erro preserva a saída preexistente.
+**Origem:** interface do desafio e decisões ENV-011.
+**Aceite:** a execução com os caminhos de entrada, saída, política e câmbio
+informados produz um arquivo JSON válido segundo o contrato desta seção.
 
 ### RN-011 — Competência e intervalo do lote
 
@@ -261,6 +332,57 @@ prazo da RN-005 e não precisam estar contidas no intervalo do lote.
 **Aceite:** competência `2026-07`, início `2026-07-01` e fim `2026-08-15` são
 válidos; início `2026-06-30`, fim anterior ao início ou data impossível são
 erros estruturais que interrompem o lote.
+
+### RN-012 — Política por centro de custo
+
+**Regra:** carregar a política do arquivo informado em cada execução. A política
+informada deve estar vigente na data local de envio do pedido, representada por
+`data_calculo`; se `data_calculo` for anterior a `vigencia`, rejeitar a
+configuração e interromper o lote. A data da despesa não escolhe a versão da
+política: uma política vigente no envio aplica-se a todo o lote, inclusive
+despesas ocorridas antes de sua vigência. Normalizar o centro de custo removendo
+espaços externos e ignorando caixa para localizar a tabela correspondente.
+Chaves de centros que colidam após essa normalização tornam a política inválida.
+Se o centro não existir, usar `padrao` integralmente. Se existir, selecionar
+primeiro sua regra para a categoria; quando ausente, usar a regra padrão da
+mesma categoria. Categorias sem regra no centro e no padrão são recusadas com
+`categoria_fora_politica`. Qualquer regra aplicável com limite zero causa recusa
+automática antes da revisão manual, com motivo `limite_zero_nao_reembolsavel`.
+Se a regra tiver `observacao` igual a `nao reembolsavel`, ignorando caixa e
+espaços externos, o limite obrigatoriamente é zero; marcador com limite
+positivo torna a política inválida. Para os demais casos, a RN-004 continua
+determinando revisão manual quando as diárias não puderem ser determinadas. Os
+limites e a exigência de nota fiscal estão em BRL.
+**Origem:** comunicado do RH, Política v4; decisões ENV-001, ENV-010, ENV-013,
+ENV-014, ENV-016 e ENV-017.
+**Aceite:** alimentação do `CC-COMERCIAL` usa R$ 90,00; hospedagem de
+`CC-ENG-PLATAFORMA` é recusada automaticamente; categoria sem regra no centro
+nem no padrão é recusada; centro não cadastrado usa os limites padrão; centros
+`CC-COMERCIAL`, `cc-comercial` e ` CC-COMERCIAL ` resolvem à mesma tabela.
+
+### RN-013 — Conversão de moeda estrangeira
+
+**Regra:** interpretar ausência de `moeda` como `BRL`. Validar em `moeda`
+somente o formato de três letras ASCII maiúsculas; não consultar uma lista
+externa de códigos ISO. Para moeda estrangeira, converter o valor original para
+BRL multiplicando-o pela cotação de venda PTAX de fechamento mais recente
+daquela moeda, em data igual ou anterior à data da despesa. A busca é feita
+entre as datas que contenham cotação para aquela moeda; nunca usar cotação
+futura. Manter precisão decimal
+durante a multiplicação e arredondar somente os valores monetários finais por
+despesa conforme RN-009. A cotação é aplicada antes dos limites e da exigência
+de nota fiscal. Preencher `valor_informado` sempre que houver cotação utilizável,
+mesmo que outra regra venha a recusar a despesa; isso não altera a ordem de
+precedência das recusas. Se nenhuma cotação anterior ou do mesmo dia existir
+para a moeda, `valor_informado` é `null`; aplicar a recusa
+`cotacao_indisponivel` na ordem definida na seção 8. `BRL` sempre usa taxa
+unitária e não depende de entrada na tabela.
+**Origem:** comunicado do RH, Política v4; decisões ENV-002 a ENV-009,
+ENV-015, ENV-019 e ENV-020.
+**Aceite:** despesa de 10 EUR em data cuja taxa é 5,90 resulta em equivalente
+R$ 59,00 antes de limites; despesa de sábado sem cotação nesse dia usa a última
+cotação anterior; nenhuma cotação disponível gera recusa individual e
+`valor_informado: null`.
 
 ---
 
@@ -393,37 +515,229 @@ os totais. Recusar valores positivos que arredondem para R$ 0,00.
 evita aprovar uma despesa sem valor reembolsável representável em centavos.
 **Regra afetada:** RN-009 e schema de saída.
 
+### AMB-011 — Precedência das políticas por centro de custo
+
+**Texto original do RH:** os limites variam por centro de custo; centros sem
+entrada usam a política padrão.
+**O que não está claro:** como compor uma tabela de centro conhecida que não
+tenha uma categoria e como tratar categoria sem regra em nenhuma das tabelas.
+**Decisão:** centro ausente usa a tabela padrão inteira; centro conhecido usa a
+regra própria da categoria e, se ausente, a regra padrão da mesma categoria.
+Sem regra em ambas, recusar apenas a despesa como categoria sem política
+aplicável.
+**Justificativa:** aplica a orientação explícita de fallback sem herdar regras
+de outro centro de custo.
+**Regra afetada:** RN-007 e RN-012.
+
+### AMB-012 — Cotação ausente na data da despesa
+
+**Texto original do RH:** usar a taxa da data da despesa; as taxas são
+publicadas apenas em dias úteis bancários.
+**O que não está claro:** como converter despesas em fim de semana/feriado ou
+quando a cotação da data não estiver registrada.
+**Decisão:** usar a cotação PTAX de fechamento de venda mais recente para a
+moeda, na própria data da despesa ou antes dela; nunca usar cotação futura.
+**Justificativa:** resolve datas sem publicação bancária sem buscar taxa atual
+nem introduzir dependência de rede.
+**Regra afetada:** RN-013.
+
+### AMB-013 — Moeda sem cotação disponível
+
+**Texto original do RH:** a entrada pode conter moedas ISO 4217; a conversão
+usa as taxas fornecidas.
+**O que não está claro:** como proceder quando não existe cotação anterior ou
+do mesmo dia para a moeda.
+**Decisão:** manter o cálculo offline e recusar somente a despesa com
+`cotacao_indisponivel`. Preservar o valor/moeda originais e representar
+`valor_informado` em BRL como `null`.
+**Justificativa:** não inventar taxa e não impedir a avaliação dos demais itens.
+**Regra afetada:** RN-013 e contrato de saída.
+
+### AMB-014 — Base de cálculo e rastreabilidade monetária
+
+**Texto original do RH:** limites são em BRL e despesas podem ser estrangeiras.
+**O que não está claro:** quando converter em relação à nota fiscal, à
+duplicidade e ao arredondamento, e como apresentar as duas moedas.
+**Decisão:** converter antes de testar limite e nota fiscal; usar o equivalente
+em BRL, sem arredondamento intermediário. Duplicidade inclui moeda e valor
+originais. Na saída, `valor_informado` é o equivalente BRL, acompanhado de
+`valor_original` com precisão integral e `moeda_original`. Incompatibilidade do
+contrato eleva `versao_schema` para `"2.0"`.
+**Justificativa:** conserva precisão de cálculo e auditabilidade do lançamento.
+**Regra afetada:** RN-003, RN-006, RN-009, RN-013 e contrato de saída.
+
+### AMB-015 — Política explicitamente não reembolsável
+
+**Texto original do RH:** `CC-ENG-PLATAFORMA` não reembolsa hospedagem de forma
+alguma.
+**O que não está claro:** se qualquer limite zero significa recusa e se uma
+observação não reembolsável pode coexistir com limite positivo.
+**Decisão:** qualquer regra aplicável com limite zero recusa automaticamente a
+despesa antes da revisão manual. O marcador opcional
+`observacao: "nao reembolsavel"` também exige limite zero; se acompanhar limite
+positivo, a política é inválida.
+**Justificativa:** impede que um zero produza status de reembolso parcial com
+valor zero e trata a proibição expressa antes de qualquer revisão.
+**Regra afetada:** RN-004 e RN-012.
+
+### AMB-016 — Localização das configurações externas
+
+**Texto original do RH:** política e cotações são arquivos externos ao código.
+**O que não está claro:** como o operador indica os arquivos usados em cada
+cálculo.
+**Decisão:** exigir as opções `--policy` e `--exchange-rates` em cada execução.
+**Justificativa:** torna explícitas as versões de política e cotações usadas e
+permite atualizar arquivos sem alterar o código.
+**Regra afetada:** RN-010 e RN-012.
+
+### AMB-017 — Vigência e lançamentos retroativos
+
+**Texto original do RH:** política v4 tem vigência imediata e é retroativa à
+competência atual.
+**O que não está claro:** se a data da despesa ou a data de envio do pedido
+determina a política aplicável.
+**Decisão:** `data_calculo` é a data local atual em que o pedido é enviado. A
+política informada precisa estar vigente nessa data; se ainda não estiver, o
+arquivo é rejeitado. Quando vigente no envio, aplica-se a todas as despesas do
+lote, mesmo que tenham ocorrido antes da vigência.
+**Justificativa:** representa a retroatividade indicada pelo RH sem inventar
+uma data de lançamento que não existe no contrato de entrada.
+**Regra afetada:** RN-005 e RN-012.
+
+### AMB-018 — Normalização de centro de custo
+
+**Texto original do RH:** a tabela de limites é indexada por centro de custo.
+**O que não está claro:** se caixa e espaços externos alteram a identificação.
+**Decisão:** remover espaços externos e ignorar maiúsculas/minúsculas para
+comparar o centro de custo recebido com as chaves da política. Preservar o valor
+original na saída. Chaves de política que colidam após normalização invalidam
+o arquivo.
+**Justificativa:** evita fallback acidental por diferenças de formatação e
+evita precedência ambígua entre chaves duplicadas.
+**Regra afetada:** RN-012.
+
+### AMB-019 — Códigos de moeda
+
+**Texto original do RH:** o campo de moeda é ISO 4217.
+**O que não está claro:** se a lista de códigos é validada contra catálogo
+externo ou se apenas o formato é validado.
+**Decisão:** exigir exatamente três letras ASCII maiúsculas, sem consulta a
+catálogo externo. Se a moeda não tiver cotação elegível no arquivo, recusar
+somente o item com `cotacao_indisponivel`.
+**Justificativa:** preserva execução offline e deixa a cotação fornecida como
+autoridade operacional para as moedas suportadas.
+**Regra afetada:** entrada e RN-013.
+
+### AMB-020 — Versão declarada da política
+
+**Texto original do envelope:** a política contém um campo `versao`.
+**O que não está claro:** se o motor deve aceitar apenas uma versão nominal
+conhecida ou validar a estrutura do arquivo independentemente desse rótulo.
+**Decisão:** tratar `versao` como metadado: exigir uma string não vazia após
+remover espaços externos, mas não rejeitar rótulos desconhecidos quando o arquivo satisfizer o schema definido
+nesta spec.
+**Justificativa:** o formato e as regras são validados pelo schema; o rótulo,
+sozinho, não altera a interpretação da política.
+**Regra afetada:** contrato de política da seção 4 e RN-012.
+
+### AMB-021 — Sinal de viagem sem regra de política
+
+**Texto original do envelope:** uma despesa de hospedagem indica viagem.
+**O que não está claro:** se a categoria precisa ter regra aplicável na
+política para produzir esse indício.
+**Decisão:** qualquer despesa estruturalmente válida com categoria normalizada
+`hospedagem`, data válida e valor original positivo gera o dia seguinte como
+data de viagem, ainda que depois seja recusada por não haver regra para a
+categoria.
+**Justificativa:** a hospedagem informa o contexto da viagem, independentemente
+de sua elegibilidade para reembolso.
+**Regra afetada:** RN-004 e ordem de aplicação, passo 2.
+
+### AMB-022 — Valor convertido em despesas recusadas
+
+**Texto original do envelope:** a saída preserva o valor original e apresenta
+`valor_informado` em BRL, ou `null` quando não há cotação.
+**O que não está claro:** se `valor_informado` deve ser calculado quando outra
+regra já é suficiente para recusar a despesa.
+**Decisão:** calcular e apresentar o equivalente BRL sempre que houver cotação
+utilizável, mesmo para despesas recusadas por outra regra. `null` significa
+exclusivamente ausência de cotação utilizável; a prioridade das razões de
+recusa segue a ordem da seção 8.
+**Justificativa:** mantém o valor monetário auditável sem mudar a decisão ou a
+precedência de regras.
+**Regra afetada:** contrato de saída, RN-009, RN-013 e ordem de aplicação.
+
+### AMB-023 — Taxa explícita para BRL
+
+**Texto original do envelope:** BRL é a moeda-base e não exige cotação no
+arquivo.
+**O que não está claro:** se uma taxa explícita para BRL é permitida e como
+interpretar um valor diferente de 1.
+**Decisão:** permitir taxa explícita para BRL somente se for numericamente
+igual a 1; rejeitar o arquivo de câmbio se o valor diferir. O cálculo sempre
+usa taxa unitária para BRL.
+**Justificativa:** mantém o comportamento da moeda-base inequívoco e permite
+arquivos que listem explicitamente a unidade-base.
+**Regra afetada:** contrato do arquivo de câmbio e RN-013.
+
 ---
 
 ## 7. Casos de borda
 
+Os casos abaixo usam `politica-v4.json`, `cambio.json` e
+`data_calculo: 2026-07-31`. Casos de limite descritos como isolados não incluem
+hospedagem no lote; os casos de viagem indicam explicitamente as hospedagens
+presentes. Os resultados do lote completo são especificados em T-018.
+
 | Caso | Entrada | Comportamento esperado (data de cálculo 2026-07-31) | Regra |
 |---|---|---|---|
-| Despesas de alimentação no mesmo dia | d-001 e d-002 | Aplicar teto por despesa: R$ 60,00 e R$ 38,00 | RN-001 |
+| Despesas de alimentação no mesmo dia, lote isolado | d-001 e d-002 em `CC-ENG-PLATAFORMA` | Aplicar teto por despesa de R$ 75,00: reembolsar R$ 72,50 e R$ 38,00 | RN-001, RN-012 |
 | Transporte sem nota a partir de R$ 100 | d-003 e d-004 | Recusar ambas por falta de nota fiscal | RN-003 |
 | Categoria fora da política | d-005 (`coworking`) | Recusar com motivo `categoria_fora_politica` | RN-007 |
-| Duplicatas de negócio | d-006 e d-007 | Manter d-006; recusar d-007 como duplicata | RN-006 |
+| Duplicatas de negócio, lote isolado | d-006 e d-007 | Manter d-006; recusar d-007 como duplicata | RN-006 |
 | Despesa com mais de 90 dias | d-008 | Recusar por prazo; diferença de 107 dias | RN-005 |
 | Valor negativo | d-009 | Recusar apenas d-009; não alterar os demais resultados | RN-008 |
-| Hospedagem com diária indeterminável | d-010 | Status `revisao_manual`, motivo `revisao_manual_viagem`, valor aprovado R$ 0,00 | RN-004 |
-| Café da manhã no dia seguinte à primeira hospedagem | d-011 | Teto de viagem R$ 90,00; reembolso R$ 33,33; motivos `limite_viagem_aplicado` e `dentro_do_limite` | RN-004, RN-009 |
+| Hospedagem proibida na política | d-010 em `CC-ENG-PLATAFORMA` | Recusar antes da revisão manual com `limite_zero_nao_reembolsavel`; ainda gera o dia de viagem 2026-07-15 | RN-004, RN-012 |
+| Café da manhã no dia seguinte à primeira hospedagem | d-011 com hospedagem em d-010 | Teto de viagem R$ 112,50; reembolso R$ 33,33; motivos `limite_viagem_aplicado` e `dentro_do_limite` | RN-004, RN-009, RN-012 |
 | Despesa em sábado com hospedagens no lote | d-012 | Status `revisao_manual`, pois não ocorre no dia seguinte a nenhuma hospedagem | RN-004 |
 | Categoria com caixa diferente e hospedagens no lote | d-014 (`ALIMENTACAO`) | Status `revisao_manual`, pois não ocorre no dia seguinte a nenhuma hospedagem | RN-004, RN-007 |
 | Hospedagem sem nota acima de R$ 100 | d-013 | Recusar por falta de nota; ainda gera dia de viagem em 2026-07-23 | RN-003, RN-004 |
 | Múltiplas hospedagens | d-010 e d-013 | Geram dias de viagem distintos: 2026-07-15 e 2026-07-23; recusa posterior de d-013 não remove o segundo dia | RN-004 |
-| Dia seguinte à segunda hospedagem | Despesa elegível em 2026-07-23 | Teto individual: alimentação R$ 90,00; transporte R$ 120,00 | RN-004 |
-| Duas refeições no mesmo dia de viagem | Duas despesas elegíveis de alimentação em 2026-07-15 | Cada despesa pode reembolsar até R$ 90,00; não há agregação diária | RN-001, RN-004 |
-| Limite parcial em viagem | Despesa de alimentação de R$ 100,00 em 2026-07-15, com nota | Reembolso R$ 90,00; status parcial; motivos `limite_viagem_aplicado` e `limite_aplicado` | RN-002, RN-004 |
+| Dia seguinte à segunda hospedagem | Despesa elegível em 2026-07-23 | Teto ampliado é o limite da categoria/centro × 1,5: alimentação CC-COMERCIAL R$ 135,00; transporte CC-ENG-PLATAFORMA R$ 120,00 | RN-004, RN-012 |
+| Duas refeições no mesmo dia de viagem | Duas despesas elegíveis de alimentação em `CC-COMERCIAL` em 2026-07-15 | Cada despesa pode reembolsar até R$ 135,00; não há agregação diária | RN-001, RN-004, RN-012 |
+| Limite parcial em viagem | Despesa de alimentação de R$ 150,00 em 2026-07-15, com nota e `CC-COMERCIAL` | Limite ampliado R$ 135,00; status parcial; motivos `limite_viagem_aplicado` e `limite_aplicado` | RN-002, RN-004, RN-012 |
 | Lista de despesas vazia | `despesas: []` | Saída com lista vazia e ambos totais em `"0.00"` | Contrato de saída |
 | Competência e início coerentes | `competencia: "2026-07"`, início `2026-07-01`, fim `2026-08-15` | Lote aceito | RN-011 |
 | Início em competência diferente | `competencia: "2026-07"`, início `2026-06-30` | Lote rejeitado sem resultado | RN-011 |
-| Versão do schema | Qualquer lote estruturalmente válido | `versao_schema` é exatamente `"1.0"` | Contrato de saída |
+| Versão do schema | Qualquer lote estruturalmente válido | `versao_schema` é exatamente `"2.0"` | Contrato de saída |
+| Centro de custo não cadastrado | `despesas-envelope-cc-desconhecido.json` | Usar limites de `padrao` | RN-012 |
+| Centro conhecido sem regra da categoria | categoria sem regra própria, presente em `padrao` | Usar o limite padrão dessa categoria | RN-012 |
+| Categoria sem regra específica nem padrão | `representacao` em centro sem regra aplicável | Recusar com `categoria_fora_politica` | RN-007, RN-012 |
+| Hospedagem não reembolsável | `CC-ENG-PLATAFORMA`, categoria `hospedagem` | Recusar automaticamente, sem revisão manual | RN-004, RN-012 |
+| Hospedagem sem regra aplicável | Categoria `hospedagem`, data válida, valor positivo, mas sem regra no centro nem no padrão | Recusar por `categoria_fora_politica`, mas ainda gerar o dia seguinte como data de viagem | RN-004, RN-007 |
+| Rótulo de versão desconhecido | `versao` não vazia após remover espaços externos e diferente de `v4`, restante da política válido | Aceitar a política pelo schema; tratar o rótulo como metadado | RN-012 |
+| Conversão em despesa recusada | Despesa estrangeira com cotação válida, mas recusada por outra regra | Informar equivalente BRL em `valor_informado`; manter status e motivos da regra impeditiva | RN-013 |
+| Taxa explícita para BRL | Arquivo inclui `BRL: 1` | Aceitar e continuar usando taxa unitária | RN-013 |
+| Taxa BRL diferente de 1 | Arquivo inclui `BRL` com valor diferente de 1 | Rejeitar o arquivo de câmbio | RN-013 |
+| Limite zero sem observação | Regra aplicável de qualquer categoria com limite `0.00` | Recusar antes da revisão manual com `limite_zero_nao_reembolsavel` | RN-012 |
+| Marcador não reembolsável com limite positivo | Regra com observação `nao reembolsavel` e limite maior que zero | Rejeitar arquivo de política; preservar saída existente | RN-012 |
+| Pedido após vigência com despesa antiga | `data_calculo` após a vigência e despesa anterior a ela | Aplicar a política informada, desde que vigente no envio | RN-012 |
+| Pedido antes da vigência | `data_calculo` anterior a `politica.vigencia` | Erro de configuração, sem resultado | RN-012 |
+| Centro de custo com variação de caixa/espaços | ` cc-comercial ` | Resolver como `CC-COMERCIAL`; preservar string original na saída | RN-012 |
+| Chaves de centro que colidem normalizadas | Política tem `CC-ADM` e ` cc-adm ` | Rejeitar arquivo de política como ambíguo | RN-012 |
+| Moeda com formato de três letras sem taxa | Código `GBP` e nenhuma taxa no arquivo atual | Recusar item com `cotacao_indisponivel`, sem buscar rede; o fixture recebido não é alterado | RN-013 |
+| Taxa pesquisada, mas ausente do arquivo | GBP/BRL `6.79180` em 2026-07-21 consta na consulta PTAX, mas não no fixture | Não usar pesquisa externa no cálculo; recusar o item GBP com cotação indisponível | RN-013 |
+| Despesa em moeda estrangeira | EUR 22,00 em 2026-07-14, taxa 5,93 | Equivalente `valor_informado` de `"130.46"` BRL antes de aplicar teto | RN-013 |
+| Sem cotação na data | EUR em sábado 2026-07-18 | Usar última taxa disponível em ou antes da data, 2026-07-17 | RN-013 |
+| Sem nenhuma cotação para moeda | Moeda sem entrada anterior ou no dia | Recusar item com `cotacao_indisponivel`; `valor_informado: null` | RN-013 |
+| Chave de duplicidade internacional | Mesmos dados, valor numérico igual, moedas originais distintas | Não tratar como duplicatas | RN-006 |
+| Rastreabilidade monetária | Despesa estrangeira convertida | Informar valor BRL, valor original sem perda de precisão e moeda original | Contrato de saída |
 | Valor positivo abaixo de meio centavo | Despesa de R$ 0,004 | Recusar com `valor_inferior_ao_centavo`; valor reembolsável `"0.00"` | RN-008, RN-009 |
 | Valor no meio centavo | Despesa de R$ 0,005 | Arredondar para R$ 0,01; não recusar por valor subcentavo | RN-008, RN-009 |
 | Igualdade de valor para duplicidade | Valores `54.90` e `54.9` em despesas com os demais campos-chave iguais | Tratar como duplicatas | RN-006 |
 | Valores distintos que exibem os mesmos centavos | `33.331` e `33.334` em despesas com os demais campos-chave iguais | Não tratar como duplicatas por valor | RN-006, RN-009 |
 | Propriedade JSON desconhecida | Campo adicional em qualquer objeto da entrada | Interromper o lote sem saída parcial | Contrato de entrada |
-| Entrada e saída no mesmo arquivo | `--input` e `--output` referem-se ao mesmo arquivo | Interromper sem alterar o arquivo de entrada | RN-010 |
+| Dois caminhos apontam para o mesmo arquivo | Qualquer par entre despesas, política, câmbio e saída, inclusive aliases | Interromper sem alterar arquivo algum | RN-010 |
 
 ## 8. Ordem de aplicação das regras
 
@@ -431,48 +745,61 @@ As regras são aplicadas nesta ordem. A primeira regra impeditiva define o statu
 principal da despesa; a saída registra o motivo correspondente. A ordem da lista
 é normativa:
 
-1. Capturar a data local uma única vez para o lote e registrá-la como
-	`data_calculo`. Validar o documento JSON, os campos obrigatórios e a ausência
-	de propriedades não especificadas. Erro estrutural, campo ausente,
-	tipo/formato inválido, ID repetido após remoção de espaços externos, início
-	fora da competência ou fim anterior ao início interrompe o lote. Se os
-	caminhos de entrada e saída apontarem para o mesmo arquivo, interromper sem
-	gravar. Em qualquer erro, não gerar resultado parcial nem alterar arquivos.
-2. Para todas as despesas estruturalmente válidas, normalizar a categoria e
-	identificar as datas de hospedagem que geram viagem: cada item com categoria
-	`hospedagem`, data válida e valor positivo gera o dia calendário seguinte,
-	mesmo que depois seja recusado por duplicidade, prazo ou falta de nota.
-	Datas repetidas geram um único dia de viagem; o aumento de limite não acumula.
-3. Para cada despesa, recusar valor zero, valor negativo, data futura ou valor
-	positivo que arredondado para duas casas resulte em R$ 0,00. Essas recusas
-	são por item e não impedem a avaliação das demais despesas válidas.
-4. Validar a categoria normalizada; recusar categoria não reconhecida.
-5. Detectar duplicatas entre despesas não recusadas pelos passos anteriores,
-	preservando a primeira na ordem de entrada e recusando as posteriores.
+1. Capturar a data local uma única vez no envio do pedido e registrá-la como
+	`data_calculo`. Validar o documento de despesas, a política e as cotações,
+	incluindo campos obrigatórios e ausência de propriedades não especificadas.
+	Erro estrutural, campo ausente, tipo/formato inválido, ID repetido após
+	remoção de espaços externos, início fora da competência ou fim anterior ao
+	início interrompe o lote. A política deve estar vigente em `data_calculo`.
+	Os caminhos de entrada, política, câmbio e saída devem ser distintos; em
+	qualquer erro, não gerar resultado parcial nem alterar arquivos.
+2. Para todas as despesas estruturalmente válidas, normalizar categoria e moeda
+	e identificar as datas de hospedagem que geram viagem: cada item com categoria
+	`hospedagem`, data válida e valor original positivo gera o dia calendário
+	seguinte, mesmo que não tenha regra de política aplicável ou depois seja
+	recusado. Datas repetidas geram um único dia de viagem; o aumento não acumula.
+3. Para preencher `valor_informado`, converter cada despesa estruturalmente
+	válida sempre que houver cotação utilizável, mesmo se outra regra recusar o
+	item. Para definir status e motivos, recusar valor original zero/negativo e
+	data futura antes de aplicar a recusa por cotação ausente. Converter moeda
+	estrangeira usando a cotação PTAX de venda mais recente em ou antes da data
+	da despesa; nenhuma consulta externa é feita. Manter precisão decimal na
+	conversão. Se
+	o equivalente BRL positivo arredondado conforme RN-009 resultar em `"0.00"`,
+	recusar com `valor_inferior_ao_centavo`, sem arredondar intermediariamente
+	o valor usado nas regras seguintes. Se não houver cotação utilizável, definir
+	`valor_informado` como `null` e, se não houver recusa anterior, recusar com
+	`cotacao_indisponivel`.
+4. Validar a categoria normalizada contra a regra específica do centro de custo
+	ou a regra padrão. Sem nenhuma regra aplicável, recusar a despesa.
+	Qualquer regra aplicável com limite zero causa recusa com
+	`limite_zero_nao_reembolsavel` antes das regras de duplicidade e revisão
+	manual.
+5. Detectar duplicatas entre despesas não recusadas, comparando categoria
+	normalizada, data, valor original decimal, moeda original, descrição e
+	fornecedor. Preservar a primeira na ordem de entrada.
 6. Recusar despesa ocorrida há mais de 90 dias, comparando com a data local do
 	cálculo. Exatamente 90 dias é elegível.
-7. Exigir nota fiscal para valor original maior ou igual a R$ 100,00; sem nota,
-	recusar a despesa integralmente.
-	Ao encontrar uma recusa nos passos 3–7, encerrar o processamento daquela
-	despesa, preservar os motivos já registrados e acrescentar o motivo da
-	recusa. Continuar o processamento dos outros itens do lote.
-8. Para despesa não recusada, se a categoria for `hospedagem`, definir status
-	`revisao_manual` e motivo `revisao_manual_viagem`, pois as diárias não podem
-	ser determinadas. Se houver hospedagem no lote e a data da despesa não for
-	uma data de viagem identificada, definir o mesmo status e motivo para itens
-	elegíveis de outras categorias. A descrição do motivo distingue essas duas
-	causas. Uma recusa anterior prevalece e não é substituída por revisão manual.
-9. Para as demais despesas elegíveis, aplicar o teto da categoria e, se a data
-	estiver no conjunto de datas de viagem, aumentar o teto em 50%. Reembolsar
-	no máximo o valor informado e registrar todos os motivos aplicáveis.
-10. Arredondar cada valor monetário por despesa para duas casas e somar os
-	 valores já arredondados para formar os totais.
+7. Exigir nota fiscal quando o equivalente BRL antes do arredondamento for
+	maior ou igual ao limite da política; sem nota, recusar a despesa integral.
+	Ao encontrar uma recusa nos passos 3–7, encerrar a avaliação daquele item,
+	preservar os motivos registrados e continuar com os demais itens.
+8. Para despesa não recusada, aplicar a política explicitamente não
+	reembolsável antes da revisão manual. Caso contrário, hospedagem fica em
+	`revisao_manual` por diária indeterminável; quando houver hospedagem no lote,
+	itens elegíveis fora das datas de viagem ficam no mesmo status, sem limite
+	normal nem ampliado.
+9. Para as demais despesas elegíveis, selecionar o limite pela RN-012 e, se a
+	data estiver no conjunto de dias de viagem, aplicar o acréscimo configurado.
+	Reembolsar no máximo o equivalente BRL e registrar os motivos aplicáveis.
+10. Arredondar valores finais BRL por despesa para duas casas e somar os valores
+	já arredondados para formar os totais. Preservar o valor original na saída.
 
 O código de saída da CLI é zero quando um resultado JSON completo foi gerado,
 mesmo que existam despesas recusadas ou em revisão manual. Erro de entrada,
-leitura ou gravação encerra com código diferente de zero. Após cálculo válido,
-o arquivo de saída existente pode ser substituído; em caso de erro, ele deve
-permanecer intacto.
+política, câmbio, leitura ou gravação encerra com código diferente de zero.
+Após cálculo válido, o arquivo de saída existente pode ser substituído; em caso
+de erro, ele deve permanecer intacto.
 
 ## 9. Critérios de aceite
 
@@ -488,14 +815,14 @@ O sistema está pronto quando:
 - [ ] `motivos` nunca está vazio; contém todos os códigos das tratativas
 	aplicadas em ordem e usa `revisao_manual_viagem` para qualquer revisão.
 - [ ] Lote sem despesas produz `despesas: []` e totais `"0.00"`; a versão do
-	contrato de saída é `"1.0"`.
+	contrato de saída é `"2.0"`.
 - [ ] O README do produto descreve como executar e testar a aplicação.
 
 ## 10. O que fica em aberto
 
-Permanecem pendentes as escolhas de stack/comandos de execução e o requisito do
-envelope do Dia 2. A relação entre `periodo.inicio`/`periodo.fim` e a regra dos
-90 dias está definida nesta versão: o período é metadado do lote, e a elegibilidade
-temporal é determinada exclusivamente pela idade da despesa em relação à data
-local do cálculo. Qualquer mudança futura deve ser registrada em
+O item opcional do envelope sobre aprovação manual de despesas acima de R$ 500
+fica fora desta entrega. A relação entre `periodo.inicio`/`periodo.fim` e a
+regra dos 90 dias permanece definida: o período é metadado do lote e a
+elegibilidade temporal é determinada exclusivamente pela idade da despesa em
+relação à data local do cálculo. Mudanças futuras devem ser registradas em
 `DECISIONS.md` antes de implementar.

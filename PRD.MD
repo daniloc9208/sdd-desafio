@@ -37,15 +37,17 @@ explicável e verificável contra as regras documentadas.
 ## Requisitos conhecidos
 
 - A interface do produto é uma CLI com o formato
-  `<comando> calcular --input despesas.json --output resultado.json`.
+  `<comando> calcular --input despesas.json --output resultado.json --policy politica.json --exchange-rates cambio.json`.
 - A entrada respeita o formato exemplificado em
   `exemplos/despesas-exemplo.json`.
 - A saída é JSON e seu schema está definido em
   `specs/001-motor-reembolso/spec.md`.
-- A política define limites-base para alimentação, transporte urbano e
-  hospedagem, reembolso parcial acima do limite, exigência de nota fiscal,
-  ampliação de limites para viagem, restrição de competência, tratamento de
-  duplicatas e recusa de categorias fora da política.
+- A política externa define limites-base por centro de custo e fallback padrão
+  por categoria, reembolso parcial acima do limite, exigência de nota fiscal,
+  ampliação de limites para viagem e categorias não reembolsáveis.
+- Despesas podem informar moeda ISO 4217; o motor usa cotações históricas PTAX
+  fornecidas em arquivo, converte para BRL e preserva valor/moeda originais na
+  saída. Não consulta serviços externos durante o cálculo.
 - A elegibilidade temporal compara a data da despesa com a data local do
   cálculo: despesas futuras ou com mais de 90 dias são recusadas.
 - Valores zero e negativos são recusados por despesa; estornos pertencem a outro
@@ -53,6 +55,8 @@ explicável e verificável contra as regras documentadas.
 - Despesas que não possam ser avaliadas automaticamente, incluindo hospedagem
   sem quantidade de diárias determinável, são sinalizadas para revisão manual e
   não entram no total aprovado.
+- A saída usa schema `2.0`; itens sem cotação disponível são recusados
+  individualmente, com valor informado em BRL nulo e dados originais preservados.
 - Testes automatizados são obrigatórios.
 - O comportamento detalhado das regras é governado por
   `specs/001-motor-reembolso/spec.md`, não por este resumo.
@@ -77,5 +81,5 @@ explicável e verificável contra as regras documentadas.
 ## Decisões pendentes
 
 As regras de negócio, schema de saída e validação estão definidos em
-`specs/001-motor-reembolso/spec.md`. Stack, comandos de execução e o requisito do
-envelope do Dia 2 ainda serão definidos nos documentos apropriados.
+`specs/001-motor-reembolso/spec.md`. A fila opcional de aprovação manual acima
+de R$ 500 do envelope fica fora desta entrega.
