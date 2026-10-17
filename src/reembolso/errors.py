@@ -7,3 +7,7 @@ class ReembolsoError(Exception):
 
 class InputDataError(ReembolsoError):
     """The expense, policy, or exchange-rate input is invalid."""
+
+
+class PathCollisionError(ReembolsoError, ValueError):
+    """Two execution paths identify the same file."""
