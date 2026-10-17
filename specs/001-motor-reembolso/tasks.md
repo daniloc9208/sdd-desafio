@@ -545,7 +545,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       tipos, datas, códigos e valores fora do contrato.
   - **Commit:** `25abe52 feat(T-023): carrega e seleciona cotacoes historicas`
 
-- [ ] **T-024** — Converter valores para BRL e tratar cotação ausente
+- [x] **T-024** — Converter valores para BRL e tratar cotação ausente
   - **O que faz:** converte cada valor para BRL usando `Decimal` e a cotação
     elegível de T-023, sem arredondamento intermediário. Mantém o valor e a
     moeda originais disponíveis para a saída. Sem cotação utilizável, recusa o
@@ -559,7 +559,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_cotacao_ausente_recusa_item_com_valor_nulo`.
     - `test_conversao_preserva_valor_moeda_originais` mantém os campos de
       origem distintos do equivalente em BRL.
-  - **Commit:**
+  - **Commit:** `5bc073f feat(T-024): converte valores e trata cotacao ausente`
 
 - [ ] **T-025** — Validar a entrega do envelope ponta a ponta
   - **O que faz:** executa CLI e núcleo com os dois arquivos de despesas do
