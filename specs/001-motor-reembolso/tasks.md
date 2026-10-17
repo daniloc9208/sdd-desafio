@@ -282,7 +282,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       posteriores para aquela despesa.
   - **Commit:**
 
-- [ ] **T-011** — Implementar identificação de dias de viagem (RN-004 — passo 2)
+- [x] **T-011** — Implementar identificação de dias de viagem (RN-004 — passo 2)
   - **O que faz:** aplica o passo 2 da ordem de aplicação, **antes** de
     qualquer recusa por item. Percorre todas as despesas com categoria
     `hospedagem`, data válida e valor original positivo, mesmo quando a
@@ -305,7 +305,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       conjunto vazio.
     - `test_rn004_datas_repetidas_dia_unico` duas hospedagens na mesma data
       geram apenas um dia de viagem; sem acúmulo de limite.
-  - **Commit:**
+  - **Commit:** `b20e8d4 feat(T-011): identifica dias de viagem`
 
 - [ ] **T-012** — Implementar revisão manual (RN-004 — passo 8)
   - **O que faz:** aplica o passo 8 da ordem de aplicação. Despesas de
