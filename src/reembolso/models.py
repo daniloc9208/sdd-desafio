@@ -1,10 +1,10 @@
 """Immutable data structures shared by the adapters and calculation core."""
 
+import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Mapping
-import unicodedata
 
 
 @dataclass(frozen=True)
@@ -38,7 +38,8 @@ class CategoryRule:
             return False
         decomposed = unicodedata.normalize("NFKD", self.observation.casefold())
         normalized = "".join(
-            character for character in decomposed
+            character
+            for character in decomposed
             if not unicodedata.combining(character)
         )
         return normalized.strip() == "nao reembolsavel"

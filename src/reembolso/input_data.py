@@ -41,16 +41,27 @@ def read_json(path: Path, label: str) -> Any:
             f"coluna {error.colno}: {error.msg}"
         ) from error
     except (OSError, UnicodeError, ValueError) as error:
-        raise InputDataError(f"{label}: não foi possível ler JSON válido: {error}") from error
+        raise InputDataError(
+            f"{label}: não foi possível ler JSON válido: {error}"
+        ) from error
 
 
-def _object(value: Any, label: str, required: set[str], optional: set[str] = set()) -> dict[str, Any]:
+def _object(
+    value: Any,
+    label: str,
+    required: set[str],
+    optional: set[str] | None = None,
+) -> dict[str, Any]:
+    if optional is None:
+        optional = set()
     if not isinstance(value, dict):
         raise InputDataError(f"{label}: deve ser um objeto JSON")
     missing = required - value.keys()
     extra = value.keys() - required - optional
     if missing:
-        raise InputDataError(f"{label}: campo obrigatório ausente: {sorted(missing)[0]}")
+        raise InputDataError(
+            f"{label}: campo obrigatório ausente: {sorted(missing)[0]}"
+        )
     if extra:
         raise InputDataError(f"{label}: propriedade não permitida: {sorted(extra)[0]}")
     return value
@@ -140,12 +151,16 @@ def load_expenses(path: Path) -> InputBatch:
         expense_id = _text(raw["id"], f"{label}.id")
         normalized_id = expense_id.strip()
         if normalized_id in identifiers:
-            raise InputDataError(f"{label}.id: identificador duplicado: {normalized_id}")
+            raise InputDataError(
+                f"{label}.id: identificador duplicado: {normalized_id}"
+            )
         identifiers.add(normalized_id)
 
         currency = raw.get("moeda", "BRL")
-        if not isinstance(currency, str) or len(currency) != 3 or not all(
-            "A" <= character <= "Z" for character in currency
+        if (
+            not isinstance(currency, str)
+            or len(currency) != 3
+            or not all("A" <= character <= "Z" for character in currency)
         ):
             raise InputDataError(
                 f"{label}.moeda: deve ser um código ISO 4217 de três letras maiúsculas"
