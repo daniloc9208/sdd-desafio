@@ -57,7 +57,8 @@ class Policy:
     travel_increase_percent: Decimal
 
     def rule_for(self, cost_center: str, category: str) -> CategoryRule | None:
-        center_rules = self.cost_center_rules.get(cost_center)
+        normalized_center = cost_center.strip().casefold()
+        center_rules = self.cost_center_rules.get(normalized_center)
         if center_rules is not None and category in center_rules:
             return center_rules[category]
         return self.default_rules.get(category)
