@@ -224,7 +224,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       nota fiscal não é avaliada para esse item, e o lote continua.
   - **Commit:** `0acf6b0 feat(T-007): normaliza e valida categorias`
 
-- [ ] **T-008** — Implementar detecção de duplicatas (RN-006)
+- [x] **T-008** — Implementar detecção de duplicatas (RN-006)
   - **O que faz:** aplica o passo 5 da ordem de aplicação. Compara categoria
     normalizada, data, valor decimal original **numericamente**, moeda original,
     descrição e fornecedor exatamente como recebidos. Mantém a
@@ -243,7 +243,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       não geram duplicata.
     - `test_rn006_recusa_encerra_item` item recusado como duplicata não avalia
       regras posteriores.
-  - **Commit:**
+  - **Commit:** `c2977b9 feat(T-008): detecta despesas duplicadas`
 
 - [ ] **T-009** — Implementar prazo de 90 dias e data futura (RN-005)
   - **O que faz:** aplica o passo 6 da ordem de aplicação. Compara a data de
