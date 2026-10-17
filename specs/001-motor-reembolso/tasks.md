@@ -181,7 +181,7 @@ executar e retomar o trabalho, siga o roadmap acima.
 
 ## Catálogo detalhado — Regras de negócio
 
-- [ ] **T-006** — Implementar validação de valor por item (RN-008)
+- [x] **T-006** — Implementar validação de valor por item (RN-008)
   - **O que faz:** aplica o passo 3 da ordem de aplicação. Recusa por item:
     valor zero (`valor_zero_invalido`), valor negativo
     (`valor_negativo_fora_escopo`) e valor positivo que arredondado para duas
@@ -198,7 +198,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       para `0.01`); não recusa por subcentavo.
     - `test_rn008_recusa_encerra_item` confirma que uma recusa neste passo não
       avalia regras posteriores para aquela despesa, mas o lote continua.
-  - **Commit:**
+  - **Commit:** `be54ba7 feat(T-006): valida valores por item`
 
 - [x] **T-007** — Implementar normalização e validação de categoria (RN-007)
   - **O que faz:** aplica o passo 4 da ordem de aplicação. Remove espaços
