@@ -160,7 +160,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       mantém a ordem dos itens de `CalculationResult`.
   - **Commit:** `591b737 feat(T-004): serializa resultado JSON`
 
-- [ ] **T-005** — Implementar escrita atômica e validação de caminhos
+- [x] **T-005** — Implementar escrita atômica e validação de caminhos
   - **O que faz:** implementa o adaptador de arquivo de saída sem orquestrar a
     CLI. Compara os caminhos de despesas, política, câmbio e saída usando
     caminhos resolvidos e normalizados, verificando também identidade de
@@ -175,7 +175,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       o conteúdo completo estar escrito.
     - `test_io_remove_temporario_apos_falha` remove o temporário quando a
       escrita ou a substituição falha, sem mascarar o erro original.
-  - **Commit:**
+  - **Commit:** `8b2535b feat(T-005): implementa escrita atomica e caminhos distintos`
 
 ---
 
