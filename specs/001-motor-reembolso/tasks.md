@@ -73,7 +73,7 @@ executar e retomar o trabalho, siga o roadmap acima.
 
 ## Catálogo detalhado — Fundação
 
-- [ ] **T-001** — Criar estrutura do projeto e ambiente instalável
+- [x] **T-001** — Criar estrutura do projeto e ambiente instalável
   - **O que faz:** garante a estrutura instalável do projeto: cria ou completa
     `pyproject.toml` com layout `src/reembolso`, entry point
     `reembolso`, dependências de desenvolvimento (`pytest`, `ruff`) e instala o
@@ -84,7 +84,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `reembolso --help` executa sem erro após `pip install -e ".[dev]"`.
     - `test_smoke_importa_pacote` importa o pacote `reembolso` sem exceção.
     - `ruff check .` e `ruff format --check .` passam sem avisos.
-  - **Commit:**
+  - **Commit:** `5d31ce6 feat(T-001): cria estrutura instalavel e CLI inicial`
 
 - [ ] **T-002** — Definir modelos de dados internos
   - **O que faz:** cria as estruturas internas `InputBatch`, `Expense`,
