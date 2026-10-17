@@ -263,7 +263,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       `data_calculo` `2026-07-31` (107 dias).
   - **Commit:** `08f15bc feat(T-009): valida prazo e data futura`
 
-- [ ] **T-010** — Implementar exigência de nota fiscal (RN-003)
+- [x] **T-010** — Implementar exigência de nota fiscal (RN-003)
   - **O que faz:** aplica o passo 7 da ordem de aplicação. Recusa despesa cujo
     valor convertido em BRL antes de arredondar atinja o limite de nota fiscal
     carregado da política, sem nota fiscal (`nota_fiscal_ausente`). A
@@ -280,7 +280,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       se a nota é obrigatória.
     - `test_rn003_recusa_encerra_item` recusa por nota não avalia regras
       posteriores para aquela despesa.
-  - **Commit:**
+  - **Commit:** `f9225f1 feat(T-010): exige nota fiscal por limite`
 
 - [x] **T-011** — Implementar identificação de dias de viagem (RN-004 — passo 2)
   - **O que faz:** aplica o passo 2 da ordem de aplicação, **antes** de
