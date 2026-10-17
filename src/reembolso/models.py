@@ -70,6 +70,8 @@ class ExchangeRates:
     rates: Mapping[date, Mapping[str, Decimal]]
 
     def rate_for(self, currency: str, expense_date: date) -> Decimal | None:
+        if currency == self.base_currency:
+            return Decimal("1")
         eligible_dates = (
             rate_date
             for rate_date, rates in self.rates.items()
