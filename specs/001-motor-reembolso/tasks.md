@@ -526,7 +526,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_policy_centro_ignora_caixa_e_espacos` resolve códigos normalizados.
   - **Commit:** `c3c3812 feat(T-022): resolve regras por centro e categoria`
 
-- [ ] **T-023** — Carregar e selecionar cotações históricas
+- [x] **T-023** — Carregar e selecionar cotações históricas
   - **O que faz:** valida `cambio.json` e seleciona para cada moeda a data de
     cotação mais recente menor ou igual à data da despesa. Permite taxa explícita
     para `BRL` apenas quando igual a 1. Não consulta a rede.
@@ -543,7 +543,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_exchange_rates_rejeita_brl_nao_unitario`.
     - `test_exchange_rates_rejeita_schema_ou_taxas_invalidos` cobre campos,
       tipos, datas, códigos e valores fora do contrato.
-  - **Commit:**
+  - **Commit:** `25abe52 feat(T-023): carrega e seleciona cotacoes historicas`
 
 - [ ] **T-024** — Converter valores para BRL e tratar cotação ausente
   - **O que faz:** converte cada valor para BRL usando `Decimal` e a cotação
