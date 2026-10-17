@@ -510,7 +510,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       zero de `CC-ENG-PLATAFORMA`.
   - **Commit:** `1c8de93 feat(T-021): carrega e valida politica externa`
 
-- [ ] **T-022** — Resolver limites por centro de custo
+- [x] **T-022** — Resolver limites por centro de custo
   - **O que faz:** implementa a resolução pura de regra: seleciona regra
     específica, fallback padrão por categoria ou política padrão integral para
     centro desconhecido; normaliza centro removendo espaços externos e
@@ -524,7 +524,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_policy_sem_regra_retorna_ausencia` quando não há regra nem no
       centro nem no padrão.
     - `test_policy_centro_ignora_caixa_e_espacos` resolve códigos normalizados.
-  - **Commit:**
+  - **Commit:** `c3c3812 feat(T-022): resolve regras por centro e categoria`
 
 - [ ] **T-023** — Carregar e selecionar cotações históricas
   - **O que faz:** valida `cambio.json` e seleciona para cada moeda a data de
