@@ -45,3 +45,6 @@ obj/
 # Claude Code — configuracao local de maquina.
 # ATENCAO: CLAUDE.md NAO entra aqui. Ele e artefato entregavel e deve ser commitado.
 .claude/settings.local.json
+
+# Graphify — indice local gerado pela extensao VS Code, nao e artefato entregavel.
+.graphify/

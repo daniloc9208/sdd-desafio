@@ -26,8 +26,8 @@
 | Decidir as ambiguidades | Responsável pelo produto | As decisões de negócio foram fornecidas pelo responsável; o agente não escolheu interpretações silenciosamente. |
 | Escrever a spec | GitHub Copilot, com revisão do responsável | O agente organizou regras e contratos; o responsável corrigiu e aprovou as interpretações. |
 | Desenhar a arquitetura | Responsável + GitHub Copilot | O responsável escolheu Python; o agente propôs arquitetura e ferramentas, aprovadas pelo responsável e registradas no plano. |
-| Implementar | Axet Plugin | Motor implementado em `src/reembolso/` (engine, CLI, rounding, todas as regras); 177 testes passam. |
-| Escrever testes | Axet Plugin, com critérios de aceite do `tasks.md` | Suite executável em `tests/`; todos os aceites de T-001 a T-026 cobertos. |
+| Implementar | Codex (T-001 a T-012, sessão 05) + Axet Plugin (T-013 a T-027, sessão 04) | Motor implementado em `src/reembolso/`; 177 testes passam. Codex usou subagentes para frentes independentes (T-004, T-005, T-021, T-023, T-006 em paralelo). |
+| Escrever testes | Codex + Axet Plugin, com critérios de aceite do `tasks.md` | Suite executável em `tests/`; todos os aceites de T-001 a T-026 cobertos e verificados. |
 | Absorver o envelope | Spec + implementação | Requisitos do envelope implementados; T-025 valida os dois fixtures ponta a ponta. |
 
 **Onde deleguei e me arrependi:**
@@ -41,10 +41,11 @@ interpretação antes de qualquer implementação; ver o caso em Discernimento.
 
 Até o momento não identificado.
 
-**Usei subagentes / skills / MCP / hooks?** Não usei subagentes nem hooks para
-especificação ou plano. Na etapa de registro da sessão, consultei a skill
-Chronicle e o índice local `session_store_sql` para recuperar turnos do chat;
-isso ajudou a compor a evidência, mas não participou das decisões de produto.
+**Usei subagentes / skills / MCP / hooks?** Na especificação e no plano não usei subagentes.
+Na implementação, o Codex CLI (sessão 05) usou subagentes explicitamente para frentes
+independentes do roadmap: T-004 (serializador), T-005 (I/O), T-021 (política), T-023
+(câmbio) e T-006 (valor) rodaram em paralelo com a frente principal, evidenciado nos
+logs da sessão 05. O Axet Plugin não usou subagentes na sessão 04.
 
 ---
 
@@ -80,8 +81,9 @@ vez no início do lote para manter o resultado reproduzível. A decisão está
 registrada em `docs/sessions/02-spec-plan-tasks.md` e em AMB-005.
 
 **Evidência da primeira versão:** commit inicial `c77c9cf`.
-**Commit da versão final:** ainda não criado; as alterações da spec v0.8 estão
-no working tree. A evolução está registrada em `DECISIONS.md` (D-001 a D-005).
+**Commit da versão final:** a spec foi evoluindo ao longo dos commits da fase de
+especificação; a versão final está em `specs/001-motor-reembolso/spec.md` e
+a evolução está registrada em `DECISIONS.md` (D-001 a D-005).
 
 ---
 
@@ -163,8 +165,9 @@ revisão foram criados `engine.py`, `rounding.py`, `__main__.py`, `cli.py`
 
 **Absorveu de graça:** na especificação, política e cotações externas, moedas
 estrangeiras, conversão histórica offline e schema de saída 2.0 foram
-acomodados sem consulta de rede durante o cálculo. A implementação ainda está
-pendente.
+acomodados sem consulta de rede durante o cálculo. A implementação foi
+concluída em T-021, T-022, T-023, T-024 e validada em T-025 com os dois
+fixtures do envelope.
 
 **Resistiu:** aprovação manual acima de R$ 500 ficou fora do escopo, conforme
 decisão registrada na spec.
@@ -173,22 +176,19 @@ decisão registrada na spec.
 `pendencias.MD`/`DECISIONS.md`, contratos incorporados à spec e critérios
 refletidos em `tasks.md` antes de retomar a implementação.
 
-**Se eu tivesse escrito a spec original sabendo desta mudança:** a preencher.
+**Se eu tivesse escrito a spec original sabendo desta mudança:** Seria mais assertivo desde o início, visto que já teria todos os cenários e regras macro.
 
-**O que a spec me poupou, em concreto:** a preencher com arquivos e tempo
-medidos após absorver o requisito.
+**O que a spec me poupou, em concreto:** Não tive quase nenhum trabalho manual, pois a regra em sí estava estabelecida. A IA apoiou nas diferenças e apenas defini as regras ambiguas.
 
 ---
 
 ## Fechamento
 
-**Para qual tamanho de projeto isto valeu a pena?** A preencher pelo
-responsável após concluir o desafio.
+**Para qual tamanho de projeto isto valeu a pena?** Entendo que para qualquer tipo de projeto vale a pena, pois apoia demais num desenvolvimento mais assertivo.
 
-**Para qual não valeria?** A preencher pelo responsável após concluir o desafio.
+**Para qual não valeria?** Não tenho ainda opinião formada sobre isso.
 
-**O que eu faria diferente:** A preencher pelo responsável; não inferir uma
-reflexão pessoal a partir do histórico do agente.
+**O que eu faria diferente:** Se as entradas pudessem ser alteradas, muita coisa seria diferente, talvez até mais fácil. 
 
 **A coisa mais desconfortável que aprendi sobre como eu trabalho com IA:**
-A preencher pelo responsável após concluir o desafio.
+Sentir tentado a aceitar tudo que é proposto por cansaço de conferir o que ocorre.
