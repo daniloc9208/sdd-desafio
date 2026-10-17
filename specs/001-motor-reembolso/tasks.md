@@ -135,7 +135,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       `Decimal` e numericamente iguais.
   - **Commit:** `3609a80 test(T-003): valida contrato estrito de despesas`
 
-- [ ] **T-004** — Implementar serializador de saída JSON
+- [x] **T-004** — Implementar serializador de saída JSON
   - **O que faz:** converte `CalculationResult` em texto JSON UTF-8, sem acesso
     ao sistema de arquivos. Serializa valores `Decimal` já arredondados como
     strings com exatamente duas casas decimais (ex: `Decimal("33.33")` →
@@ -158,7 +158,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       totais, despesa e motivo.
     - `test_serializador_preserva_ordem_entrada` a lista `despesas` na saída
       mantém a ordem dos itens de `CalculationResult`.
-  - **Commit:**
+  - **Commit:** `591b737 feat(T-004): serializa resultado JSON`
 
 - [ ] **T-005** — Implementar escrita atômica e validação de caminhos
   - **O que faz:** implementa o adaptador de arquivo de saída sem orquestrar a
