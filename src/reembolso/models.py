@@ -17,6 +17,7 @@ class Expense:
     original_value: Decimal
     original_currency: str
     has_receipt: bool
+    normalized_category: str | None = None
 
 
 @dataclass(frozen=True)
@@ -98,7 +99,9 @@ class ExpenseDecision:
 
 @dataclass(frozen=True)
 class CalculationResult:
+    schema_version: str
     calculation_date: date
+    currency: str
     collaborator: Mapping[str, str]
     period: Mapping[str, str]
     expenses: tuple[ExpenseDecision, ...]
