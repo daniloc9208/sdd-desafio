@@ -86,7 +86,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `ruff check .` e `ruff format --check .` passam sem avisos.
   - **Commit:** `5d31ce6 feat(T-001): cria estrutura instalavel e CLI inicial`
 
-- [ ] **T-002** — Definir modelos de dados internos
+- [x] **T-002** — Definir modelos de dados internos
   - **O que faz:** cria as estruturas internas `InputBatch`, `Expense`,
     `Policy`, `ExchangeRates`, `ExpenseDecision` e `CalculationResult` com
     todos os campos descritos no plano técnico. Valores monetários são
@@ -96,7 +96,7 @@ executar e retomar o trabalho, siga o roadmap acima.
   - **Aceite:**
     - `test_models_instantiation` cria instâncias de cada modelo com valores
       válidos e verifica que campos monetários são `Decimal`, não `float`.
-  - **Commit:**
+  - **Commit:** `6b3c49e feat(T-002): define modelos internos`
 
 - [ ] **T-003** — Implementar parser e validador de entrada JSON
   - **O que faz:** lê o JSON de despesas e valida estritamente o contrato
