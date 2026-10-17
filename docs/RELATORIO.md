@@ -1,6 +1,6 @@
 # Relatório — Desafio SDD
 
-**Aluno:** `<preencher nome>` · **Repositório:** https://github.com/daniloc9208/sdd-desafio · **Data deste rascunho:** 2026-10-16
+**Aluno:** DANILO CARDOSO ALVES · **Repositório:** https://github.com/daniloc9208/sdd-desafio · **Data deste rascunho:** 2026-10-16
 
 > **Status:** relatório parcial. O motor está implementado e a suite de 177
 > testes passa com `ruff check .` e `ruff format --check .` limpos.
