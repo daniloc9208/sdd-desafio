@@ -245,7 +245,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       regras posteriores.
   - **Commit:** `c2977b9 feat(T-008): detecta despesas duplicadas`
 
-- [ ] **T-009** — Implementar prazo de 90 dias e data futura (RN-005)
+- [x] **T-009** — Implementar prazo de 90 dias e data futura (RN-005)
   - **O que faz:** aplica o passo 6 da ordem de aplicação. Compara a data de
     cada despesa com `data_calculo`. Recusa data futura (`data_futura`) e
     despesa com mais de 90 dias corridos (`prazo_excedido`). Exatamente 90 dias
@@ -261,7 +261,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       recusada com `data_futura`.
     - `test_rn005_d008_excede_prazo` d-008 (`2026-04-15`) recusada com
       `data_calculo` `2026-07-31` (107 dias).
-  - **Commit:**
+  - **Commit:** `08f15bc feat(T-009): valida prazo e data futura`
 
 - [ ] **T-010** — Implementar exigência de nota fiscal (RN-003)
   - **O que faz:** aplica o passo 7 da ordem de aplicação. Recusa despesa cujo
