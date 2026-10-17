@@ -13,13 +13,11 @@
 
 ## Estado e ordem de execução
 
-**Estado registrado:** nenhuma task está marcada como concluída; retomar por
-**T-001**. O checkbox de cada task detalhada abaixo é a fonte única do estado.
-Depois de cada commit, registrar seu hash no campo `Commit` da task e marcar
-`[x]` apenas quando todos os critérios de aceite estiverem verificados.
-Há scaffolding parcial no worktree; a ausência de checks indica que nenhum
-critério foi formalmente verificado, não que os arquivos devam ser recriados.
-Começar auditando T-001 e registrar o que já satisfaz seus aceites.
+**Estado registrado:** T-001 a T-014, T-016 a T-027 concluídas. Todas as tasks
+do roadmap estão completas. O checkbox de cada task detalhada abaixo é a fonte
+única do estado. Depois de cada commit, registrar seu hash no campo `Commit`
+da task e marcar `[x]` apenas quando todos os critérios de aceite estiverem
+verificados.
 
 Ao interromper uma task ainda incompleta, acrescentar/preencher nela
 `**Retomada:**` com critérios já verificados, arquivos tocados, próximo passo
@@ -332,7 +330,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       gera `revisao_manual` por motivo de viagem.
   - **Commit:** `c988bc7 feat(T-012): aplica revisao manual e limite zero`
 
-- [ ] **T-013** — Implementar aplicação de teto por despesa (RN-001, RN-002, RN-004 — passo 9)
+- [x] **T-013** — Implementar aplicação de teto por despesa (RN-001, RN-002, RN-004 — passo 9)
   - **O que faz:** aplica o passo 9 da ordem de aplicação usando limites
     fornecidos pela política; os testes unitários de RN-001 usam uma política
     de teste com limites R$ 60/R$ 80, não constantes no código. Para despesas
@@ -368,9 +366,9 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_rn004_duas_despesas_mesmo_dia_viagem` duas refeições em
       `2026-07-15` recebem teto R$ 90,00 individualmente, sem agregação.
     - `test_rn006_motivos_nao_vazios` toda despesa tem `motivos` não vazio.
-  - **Commit:**
+  - **Commit:** `243af98 feat(T-026): orquestra todas as regras no calculo principal`
 
-- [ ] **T-014** — Implementar arredondamento monetário e cálculo de totais (RN-009 — passo 10)
+- [x] **T-014** — Implementar arredondamento monetário e cálculo de totais (RN-009 — passo 10)
   - **O que faz:** aplica o passo 10. Converte antes de arredondar e arredonda
     cada valor BRL por despesa para duas casas (terceiro algarismo 0–4 para
     baixo; 5–9 para cima)
@@ -388,7 +386,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       arredondados por despesa, não dos valores brutos.
     - `test_rn009_total_em_revisao` `totais.valor_em_revisao` soma o
       `valor_informado` arredondado das despesas em `revisao_manual`.
-  - **Commit:**
+  - **Commit:** `54f7613 feat(T-014): implementa arredondamento monetario round_brl` · `17961d2 test(T-014): testa arredondamento e totais do calculo`
 
 ---
 
@@ -408,7 +406,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       `2026-07` → aceito.
   - **Commit:** `0b0dfcb test(T-016): cobre coerencia do periodo`
 
-- [ ] **T-017** — Lote vazio e entrada mínima
+- [x] **T-017** — Lote vazio e entrada mínima
   - **O que faz:** testa lote com `despesas: []` e lote com uma única despesa
     válida.
   - **Atende:** contrato de saída seção 4, FURO-009
@@ -417,13 +415,13 @@ executar e retomar o trabalho, siga o roadmap acima.
       `totais.valor_reembolsavel: "0.00"` e `totais.valor_em_revisao: "0.00"`.
     - `test_lote_uma_despesa_valida` lote com uma despesa elegível abaixo do
       teto → `status: "reembolsada"`, total correto.
-  - **Commit:**
+  - **Commit:** `d939cbb test(T-017,T-018,T-019,T-020,T-025): testes de integracao CLI e nucleo`
 
 ---
 
 ## Catálogo detalhado — Integração
 
-- [ ] **T-018** — Integração do núcleo com o lote de exemplo completo
+- [x] **T-018** — Integração do núcleo com o lote de exemplo completo
   - **O que faz:** executa o núcleo sobre `despesas-exemplo.json` com data
     `2026-07-31`, política e câmbio explícitos. Verifica os 14 resultados
     contra as regras v4, incluindo limites do `CC-ENG-PLATAFORMA`, categorias
@@ -446,9 +444,9 @@ executar e retomar o trabalho, siga o roadmap acima.
       2026-07-23.
     - Totais: `valor_reembolsavel: "33.33"` e
       `valor_em_revisao: "273.60"`.
-  - **Commit:**
+  - **Commit:** `d939cbb test(T-017,T-018,T-019,T-020,T-025): testes de integracao CLI e nucleo`
 
-- [ ] **T-019** — Integração CLI via subprocesso
+- [x] **T-019** — Integração CLI via subprocesso
   - **O que faz:** invoca `reembolso calcular --input --output --policy
     --exchange-rates` via
     `subprocess` com arquivo temporário, verifica código de retorno, JSON
@@ -459,9 +457,9 @@ executar e retomar o trabalho, siga o roadmap acima.
       `despesas-exemplo.json`; verifica código 0; carrega a saída e confirma
       `versao_schema: "2.0"`, `moeda: "BRL"` e `data_calculo` no formato
       `AAAA-MM-DD`.
-  - **Commit:**
+  - **Commit:** `c05093f feat(T-026): implementa subcomando calcular na CLI` · `d939cbb test(...)`
 
-- [ ] **T-020** — Preservação de saída em falha de I/O
+- [x] **T-020** — Preservação de saída em falha de I/O
   - **O que faz:** simula falha real de gravação (ex: permissão negada no
     diretório de destino ou disco cheio) e confirma que a saída preexistente
     permanece intacta. Valida a estratégia de gravação temporária + substituição
@@ -474,7 +472,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       saída preexistente inalterada.
     - `test_io_preserva_saida_configuracao_invalida` política/câmbio inválido
       não altera a saída preexistente.
-  - **Commit:**
+  - **Commit:** `d939cbb test(T-017,T-018,T-019,T-020,T-025): testes de integracao CLI e nucleo`
 
 ---
 
@@ -561,7 +559,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       origem distintos do equivalente em BRL.
   - **Commit:** `5bc073f feat(T-024): converte valores e trata cotacao ausente`
 
-- [ ] **T-025** — Validar a entrega do envelope ponta a ponta
+- [x] **T-025** — Validar a entrega do envelope ponta a ponta
   - **O que faz:** executa CLI e núcleo com os dois arquivos de despesas do
     envelope, política v4 e câmbio versionado; não altera os JSON de despesas
     recebidos. Documentação e relatório pertencem à T-027.
@@ -587,9 +585,9 @@ executar e retomar o trabalho, siga o roadmap acima.
       recusa por categoria ainda informa o equivalente BRL quando há cotação.
     - Ambos os testes verificam ordem, status, valores, códigos de motivo e
       totais; os fixtures originais permanecem inalterados.
-  - **Commit:**
+  - **Commit:** `d939cbb test(T-017,T-018,T-019,T-020,T-025): testes de integracao CLI e nucleo`
 
-- [ ] **T-026** — Integrar a CLI com carregadores e núcleo
+- [x] **T-026** — Integrar a CLI com carregadores e núcleo
   - **O que faz:** implementa o subcomando
     `calcular --input --output --policy --exchange-rates`, conecta os
     adaptadores validados, o núcleo, serializador e gravador de T-005; captura
@@ -605,9 +603,9 @@ executar e retomar o trabalho, siga o roadmap acima.
       zero para entrada/configuração inválida.
     - `test_cli_data_calculo_na_saida` verifica data controlada no teste e
       confirma que o relógio é consultado uma única vez.
-  - **Commit:**
+  - **Commit:** `243af98 feat(T-026): orquestra todas as regras no calculo principal` · `c05093f feat(T-026): implementa subcomando calcular na CLI`
 
-- [ ] **T-027** — Atualizar instruções e relatório da entrega
+- [x] **T-027** — Atualizar instruções e relatório da entrega
   - **O que faz:** atualiza README e relatório para documentar instalação,
     execução com os quatro caminhos obrigatórios, testes e evidências da
     implementação do envelope. Distingue fatos verificados de medições não
@@ -617,7 +615,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - README contém comandos reproduzíveis de instalação, execução e testes.
     - relatório identifica os arquivos tocados, evidencia as verificações
       realmente executadas e não afirma medições não realizadas.
-  - **Commit:**
+  - **Commit:** `07b430a docs(T-027): atualiza relatorio com status da implementacao`
 
 ---
 
