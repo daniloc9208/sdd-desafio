@@ -200,7 +200,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       avalia regras posteriores para aquela despesa, mas o lote continua.
   - **Commit:**
 
-- [ ] **T-007** — Implementar normalização e validação de categoria (RN-007)
+- [x] **T-007** — Implementar normalização e validação de categoria (RN-007)
   - **O que faz:** aplica o passo 4 da ordem de aplicação. Remove espaços
     externos e converte para minúsculas; consulta a política aplicável por
     centro/categoria e recusa categoria sem regra específica nem padrão com
@@ -222,7 +222,7 @@ executar e retomar o trabalho, siga o roadmap acima.
     - `test_rn007_recusa_encerra_item` categoria desconhecida com valor de
       R$ 100,00 e sem nota produz somente `categoria_fora_politica`; a regra de
       nota fiscal não é avaliada para esse item, e o lote continua.
-  - **Commit:**
+  - **Commit:** `0acf6b0 feat(T-007): normaliza e valida categorias`
 
 - [ ] **T-008** — Implementar detecção de duplicatas (RN-006)
   - **O que faz:** aplica o passo 5 da ordem de aplicação. Compara categoria
