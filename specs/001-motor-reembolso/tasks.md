@@ -482,7 +482,7 @@ executar e retomar o trabalho, siga o roadmap acima.
 
 > Tasks para os requisitos v4. Numeração continua em T-021.
 
-- [ ] **T-021** — Carregar e validar política externa
+- [x] **T-021** — Carregar e validar política externa
   - **O que faz:** lê o arquivo apontado por `--policy`, valida que `versao` é
     uma string não vazia após remover espaços externos (sem restringir seus
     rótulos), vigência, moeda-base,
@@ -508,7 +508,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       colidam após normalização.
     - `test_policy_nao_reembolsavel_preservada` preserva a observação do limite
       zero de `CC-ENG-PLATAFORMA`.
-  - **Commit:**
+  - **Commit:** `1c8de93 feat(T-021): carrega e valida politica externa`
 
 - [ ] **T-022** — Resolver limites por centro de custo
   - **O que faz:** implementa a resolução pura de regra: seleciona regra
