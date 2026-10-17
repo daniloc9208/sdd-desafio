@@ -307,7 +307,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       geram apenas um dia de viagem; sem acúmulo de limite.
   - **Commit:** `b20e8d4 feat(T-011): identifica dias de viagem`
 
-- [ ] **T-012** — Implementar revisão manual (RN-004 — passo 8)
+- [x] **T-012** — Implementar revisão manual (RN-004 — passo 8)
   - **O que faz:** aplica o passo 8 da ordem de aplicação. Despesas de
     categoria `hospedagem` recebem `revisao_manual` com motivo
     `revisao_manual_viagem` (descrição: diárias indetermináveis) quando a regra
@@ -330,7 +330,7 @@ executar e retomar o trabalho, siga o roadmap acima.
       prazo em lote com hospedagem permanece `recusada`.
     - `test_rn004_sem_hospedagem_sem_revisao_manual` lote sem hospedagem não
       gera `revisao_manual` por motivo de viagem.
-  - **Commit:**
+  - **Commit:** `c988bc7 feat(T-012): aplica revisao manual e limite zero`
 
 - [ ] **T-013** — Implementar aplicação de teto por despesa (RN-001, RN-002, RN-004 — passo 9)
   - **O que faz:** aplica o passo 9 da ordem de aplicação usando limites
